@@ -3,6 +3,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 interface AuthGuardProps {
   children: ReactNode;
@@ -31,8 +32,14 @@ export function AuthGuard({ children }: AuthGuardProps) {
 
         if (error) {
           console.error("Error checking admin status:", error);
+          toast({
+            title: "Error",
+            description: "Could not verify admin status",
+            variant: "destructive",
+          });
           setIsAdmin(false);
         } else if (data && data.length > 0) {
+          console.log("Found profile with admin status:", data[0]?.is_admin);
           // Use first row if exists
           setIsAdmin(data[0]?.is_admin || false);
         } else {
@@ -49,10 +56,20 @@ export function AuthGuard({ children }: AuthGuardProps) {
             
           if (insertError) {
             console.error("Error creating profile:", insertError);
+            toast({
+              title: "Error",
+              description: "Could not create user profile",
+              variant: "destructive",
+            });
             setIsAdmin(false);
           } else {
             // Successfully created profile with admin status
+            console.log("Successfully created profile with admin status");
             setIsAdmin(true);
+            toast({
+              title: "Success",
+              description: "Admin profile created successfully",
+            });
           }
         }
       } catch (error) {
@@ -79,8 +96,18 @@ export function AuthGuard({ children }: AuthGuardProps) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (!isAdmin && location.pathname.startsWith('/admin')) {
+  // Additional logging for debugging
+  console.log("Current path:", location.pathname);
+  console.log("Is admin:", isAdmin);
+  console.log("Is admin path:", location.pathname.startsWith('/admin'));
+
+  if (isAdmin === false && location.pathname.startsWith('/admin')) {
     // Not an admin, but trying to access admin pages
+    toast({
+      title: "Access Denied",
+      description: "You need admin privileges to access this page",
+      variant: "destructive",
+    });
     return <Navigate to="/" replace />;
   }
 

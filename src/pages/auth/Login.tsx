@@ -26,6 +26,7 @@ const Login = () => {
       const { error } = await signIn(email, password);
       
       if (error) {
+        console.error("Login error:", error);
         toast({
           title: "Login failed",
           description: error.message || "Invalid email or password.",
@@ -36,9 +37,14 @@ const Login = () => {
           title: "Login successful",
           description: "Welcome back!",
         });
-        navigate(from, { replace: true });
+        console.log("Login successful, redirecting to:", from);
+        // Force a small delay to ensure the auth state propagates
+        setTimeout(() => {
+          navigate(from, { replace: true });
+        }, 100);
       }
     } catch (error) {
+      console.error("Unexpected login error:", error);
       toast({
         title: "Login failed",
         description: "An unexpected error occurred.",
