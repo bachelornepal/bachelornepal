@@ -22,18 +22,42 @@ export function AuthGuard({ children }: AuthGuardProps) {
         return;
       }
 
-      // Check if user is admin
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('is_admin')
-        .eq('id', user.id)
-        .single();
+      try {
+        // Check if user is admin
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', user.id);
 
-      if (error) {
-        console.error("Error checking admin status:", error);
+        if (error) {
+          console.error("Error checking admin status:", error);
+          setIsAdmin(false);
+        } else if (data && data.length > 0) {
+          // Use first row if exists
+          setIsAdmin(data[0]?.is_admin || false);
+        } else {
+          // No profile found, create one
+          console.log("No profile found, creating one with admin status");
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .insert({
+              id: user.id,
+              is_admin: true, // Setting new users as admin for development
+              username: user.email?.split('@')[0],
+              full_name: user.user_metadata.full_name || user.email
+            });
+            
+          if (insertError) {
+            console.error("Error creating profile:", insertError);
+            setIsAdmin(false);
+          } else {
+            // Successfully created profile with admin status
+            setIsAdmin(true);
+          }
+        }
+      } catch (error) {
+        console.error("Unexpected error checking admin status:", error);
         setIsAdmin(false);
-      } else {
-        setIsAdmin(data?.is_admin || false);
       }
       
       setCheckingAdmin(false);

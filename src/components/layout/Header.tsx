@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { Pencil } from "lucide-react";
+import { Pencil, LogIn } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -48,7 +48,7 @@ export function Header({ session }: HeaderProps) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      (_event, session) => {
         setUser(session?.user || null);
       }
     );
@@ -88,7 +88,16 @@ export function Header({ session }: HeaderProps) {
               <Pencil className="mr-2 h-4 w-4" />
               Admin
             </Button>
-          ) : null}
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/login")}
+            >
+              <LogIn className="mr-2 h-4 w-4" />
+              Login
+            </Button>
+          )}
         </div>
       </div>
     </header>
