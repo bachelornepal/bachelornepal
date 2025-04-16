@@ -14,34 +14,38 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminCategories from "./pages/admin/categories/AdminCategories";
 import CategoryForm from "./pages/admin/categories/CategoryForm";
 import AdminPosts from "./pages/admin/posts/AdminPosts";
+import { AuthProvider } from "./contexts/AuthContext";
+import { AuthGuard } from "./components/auth/AuthGuard";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          {/* Public routes */}
-          <Route path="/" element={<Index />} />
-          <Route path="/:categorySlug" element={<CategoryPage />} />
-          <Route path="/:categorySlug/:postSlug" element={<PostPage />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          
-          {/* Admin routes */}
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/categories" element={<AdminCategories />} />
-          <Route path="/admin/categories/new" element={<CategoryForm />} />
-          <Route path="/admin/categories/:id" element={<CategoryForm />} />
-          <Route path="/admin/posts" element={<AdminPosts />} />
-          
-          {/* 404 route */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <AuthProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={<Index />} />
+            <Route path="/:categorySlug" element={<CategoryPage />} />
+            <Route path="/:categorySlug/:postSlug" element={<PostPage />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            
+            {/* Protected admin routes */}
+            <Route path="/admin" element={<AuthGuard><AdminDashboard /></AuthGuard>} />
+            <Route path="/admin/categories" element={<AuthGuard><AdminCategories /></AuthGuard>} />
+            <Route path="/admin/categories/new" element={<AuthGuard><CategoryForm /></AuthGuard>} />
+            <Route path="/admin/categories/:id" element={<AuthGuard><CategoryForm /></AuthGuard>} />
+            <Route path="/admin/posts" element={<AuthGuard><AdminPosts /></AuthGuard>} />
+            
+            {/* 404 route */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

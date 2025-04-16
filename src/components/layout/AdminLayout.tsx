@@ -1,9 +1,10 @@
 
 import { ReactNode } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { BookOpen, FolderOpen, Home, LogOut, Settings, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -11,7 +12,9 @@ interface AdminLayoutProps {
 
 export function AdminLayout({ children }: AdminLayoutProps) {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const { toast } = useToast();
+  const { signOut } = useAuth();
 
   const navLinks = [
     { href: "/admin", label: "Dashboard", icon: Home },
@@ -21,13 +24,21 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     { href: "/admin/settings", label: "Settings", icon: Settings },
   ];
 
+  const handleSignOut = async () => {
+    await signOut();
+    toast({
+      title: "Signed out successfully",
+    });
+    navigate("/");
+  };
+
   return (
     <div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr]">
       <div className="hidden border-r bg-sidebar lg:block">
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div className="flex h-14 items-center border-b px-6">
             <Link to="/" className="flex items-center gap-2 font-bold">
-              <span>Blog Admin</span>
+              <span>BachelorNepal Admin</span>
             </Link>
           </div>
           <div className="flex-1 overflow-auto py-2">
@@ -55,13 +66,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             <Button 
               variant="outline" 
               className="w-full justify-start" 
-              onClick={() => {
-                // In real app, would call signOut() from Supabase here
-                toast({
-                  title: "Signed out successfully",
-                });
-                window.location.href = "/";
-              }}
+              onClick={handleSignOut}
             >
               <LogOut className="mr-2 h-4 w-4" />
               Log out
@@ -78,7 +83,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           <div className="w-full flex-1">
             <h1 className="font-semibold">Admin Panel</h1>
           </div>
-          <Button variant="ghost" size="icon" className="lg:hidden">
+          <Button variant="ghost" size="icon" className="lg:hidden" onClick={handleSignOut}>
             <LogOut className="h-5 w-5" />
             <span className="sr-only">Log out</span>
           </Button>
