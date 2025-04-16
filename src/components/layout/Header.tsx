@@ -39,8 +39,12 @@ export function Header({ session }: HeaderProps) {
     fetchCategories();
 
     // Check for current user session
-    const { data: { user } } = supabase.auth.getUser();
-    setUser(user);
+    const fetchUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      setUser(data.user);
+    };
+
+    fetchUser();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
