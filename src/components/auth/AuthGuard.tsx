@@ -3,7 +3,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 interface AuthGuardProps {
   children: ReactNode;
@@ -14,6 +14,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
   const location = useLocation();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [checkingAdmin, setCheckingAdmin] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -24,6 +25,8 @@ export function AuthGuard({ children }: AuthGuardProps) {
       }
 
       try {
+        console.log("Checking admin status for user:", user.id);
+        
         // Check if user is admin
         const { data, error } = await supabase
           .from('profiles')
@@ -40,7 +43,6 @@ export function AuthGuard({ children }: AuthGuardProps) {
           setIsAdmin(false);
         } else if (data && data.length > 0) {
           console.log("Found profile with admin status:", data[0]?.is_admin);
-          // Use first row if exists
           setIsAdmin(data[0]?.is_admin || false);
         } else {
           // No profile found, create one
@@ -58,7 +60,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
             console.error("Error creating profile:", insertError);
             toast({
               title: "Error",
-              description: "Could not create user profile",
+              description: `Could not create user profile: ${insertError.message}`,
               variant: "destructive",
             });
             setIsAdmin(false);
@@ -80,8 +82,12 @@ export function AuthGuard({ children }: AuthGuardProps) {
       setCheckingAdmin(false);
     };
 
-    checkAdminStatus();
-  }, [user]);
+    if (user) {
+      checkAdminStatus();
+    } else {
+      setCheckingAdmin(false);
+    }
+  }, [user, toast]);
 
   if (loading || checkingAdmin) {
     return (
@@ -93,16 +99,18 @@ export function AuthGuard({ children }: AuthGuardProps) {
 
   if (!user) {
     // Not logged in, redirect to login
+    console.log("User not logged in, redirecting to login from:", location.pathname);
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   // Additional logging for debugging
-  console.log("Current path:", location.pathname);
+  console.log("Auth check completed - Current path:", location.pathname);
   console.log("Is admin:", isAdmin);
   console.log("Is admin path:", location.pathname.startsWith('/admin'));
 
   if (isAdmin === false && location.pathname.startsWith('/admin')) {
     // Not an admin, but trying to access admin pages
+    console.log("Access denied - User is not admin");
     toast({
       title: "Access Denied",
       description: "You need admin privileges to access this page",

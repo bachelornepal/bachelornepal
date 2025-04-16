@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -23,7 +24,7 @@ const Login = () => {
     setLoading(true);
     
     try {
-      const { error } = await signIn(email, password);
+      const { error, data } = await signIn(email, password);
       
       if (error) {
         console.error("Login error:", error);
@@ -33,15 +34,28 @@ const Login = () => {
           variant: "destructive",
         });
       } else {
+        // Check admin status after successful login
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', data?.user?.id);
+
+        if (profileError) {
+          console.error("Error checking profile:", profileError);
+        }
+
         toast({
           title: "Login successful",
           description: "Welcome back!",
         });
+        
         console.log("Login successful, redirecting to:", from);
-        // Force a small delay to ensure the auth state propagates
+        console.log("Profile data:", profileData);
+        
+        // Force a longer delay to ensure the auth state and profile data propagates
         setTimeout(() => {
           navigate(from, { replace: true });
-        }, 100);
+        }, 500);
       }
     } catch (error) {
       console.error("Unexpected login error:", error);
