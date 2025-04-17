@@ -1,3 +1,4 @@
+
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RichTextEditor } from "@/components/RichTextEditor";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Category {
   id: string;
@@ -27,6 +29,9 @@ const postSchema = z.object({
   content: z.string().optional(),
   category_id: z.string().min(1, "Category is required"),
   featured_image: z.string().optional(),
+  meta_title: z.string().optional(),
+  meta_description: z.string().optional(),
+  meta_keywords: z.string().optional(),
 });
 
 type PostFormValues = z.infer<typeof postSchema>;
@@ -48,6 +53,9 @@ const PostForm = () => {
       content: "",
       category_id: "",
       featured_image: "",
+      meta_title: "",
+      meta_description: "",
+      meta_keywords: "",
     },
   });
 
@@ -95,6 +103,9 @@ const PostForm = () => {
           content: data.content || "",
           category_id: data.category_id || "",
           featured_image: data.featured_image || "",
+          meta_title: data.meta_title || "",
+          meta_description: data.meta_description || "",
+          meta_keywords: data.meta_keywords || "",
         });
       } catch (error) {
         console.error("Error fetching post:", error);
@@ -133,7 +144,13 @@ const PostForm = () => {
     form.setValue("title", title);
     
     if (!id || !form.getValues("slug")) {
-      form.setValue("slug", generateSlug(title));
+      const slug = generateSlug(title);
+      form.setValue("slug", slug);
+    }
+
+    // Auto-populate meta title if empty
+    if (!form.getValues("meta_title")) {
+      form.setValue("meta_title", title);
     }
   };
 
@@ -147,18 +164,23 @@ const PostForm = () => {
         throw new Error("User not authenticated");
       }
 
-      if (!values.slug) {
-        values.slug = generateSlug(values.title);
-      }
+      const slug = values.slug || generateSlug(values.title);
 
+      // Make sure title and slug are always provided
       if (!values.title) {
         throw new Error("Post title is required");
       }
 
       const postData = {
-        ...values,
         title: values.title,
-        slug: values.slug,
+        slug: slug,
+        excerpt: values.excerpt,
+        content: values.content,
+        category_id: values.category_id,
+        featured_image: values.featured_image,
+        meta_title: values.meta_title || values.title,
+        meta_description: values.meta_description || values.excerpt,
+        meta_keywords: values.meta_keywords,
         author_id: userData.user.id,
         published_at: new Date().toISOString(),
       };
@@ -230,135 +252,212 @@ const PostForm = () => {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-6">
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Title</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Enter post title" 
-                        {...field}
-                        onChange={handleTitleChange}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          <Tabs defaultValue="content" className="w-full">
+            <TabsList className="mb-6">
+              <TabsTrigger value="content">Content</TabsTrigger>
+              <TabsTrigger value="seo">SEO</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="content" className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Title</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="Enter post title" 
+                            {...field}
+                            onChange={handleTitleChange}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <FormField
-                control={form.control}
-                name="slug"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Slug</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="post-url-slug" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      The URL-friendly version of the title.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  <FormField
+                    control={form.control}
+                    name="slug"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Slug</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="post-url-slug" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          The URL-friendly version of the title.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <FormField
-                control={form.control}
-                name="category_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Category</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a category" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {categories.map((category) => (
-                          <SelectItem key={category.id} value={category.id}>
-                            {category.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  <FormField
+                    control={form.control}
+                    name="category_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Category</FormLabel>
+                        <Select 
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a category" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {categories.map((category) => (
+                              <SelectItem key={category.id} value={category.id}>
+                                {category.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <FormField
-                control={form.control}
-                name="featured_image"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Featured Image URL</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="https://example.com/image.jpg" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Enter a URL for the post's featured image.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  <FormField
+                    control={form.control}
+                    name="featured_image"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Featured Image URL</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="https://example.com/image.jpg" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Enter a URL for the post's featured image.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <FormField
-                control={form.control}
-                name="excerpt"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Excerpt</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Brief summary of the post" 
-                        rows={3}
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      A short description that appears in post listings.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                  <FormField
+                    control={form.control}
+                    name="excerpt"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Excerpt</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Brief summary of the post" 
+                            rows={3}
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          A short description that appears in post listings.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
-            <div>
-              <FormField
-                control={form.control}
-                name="content"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col h-full">
-                    <FormLabel>Content</FormLabel>
-                    <div className="flex-grow">
-                      <RichTextEditor 
-                        value={field.value || ""} 
-                        onChange={field.onChange}
-                      />
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-          </div>
+                <div>
+                  <FormField
+                    control={form.control}
+                    name="content"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col h-full">
+                        <FormLabel>Content</FormLabel>
+                        <div className="flex-grow">
+                          <RichTextEditor 
+                            value={field.value || ""} 
+                            onChange={field.onChange}
+                          />
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="seo" className="space-y-6">
+              <div className="max-w-2xl">
+                <div className="space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="meta_title"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Meta Title</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="SEO Title (leave empty to use post title)"
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Recommended length: 50-60 characters
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="meta_description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Meta Description</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Brief description for search engines"
+                            rows={3}
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Recommended length: 120-160 characters
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="meta_keywords"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Meta Keywords</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="keyword1, keyword2, keyword3"
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Comma-separated keywords
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
         </form>
       </Form>
     </AdminLayout>
