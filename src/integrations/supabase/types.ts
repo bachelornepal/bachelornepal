@@ -14,6 +14,9 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          meta_description: string | null
+          meta_keywords: string | null
+          meta_title: string | null
           name: string
           slug: string
           updated_at: string
@@ -22,6 +25,9 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          meta_description?: string | null
+          meta_keywords?: string | null
+          meta_title?: string | null
           name: string
           slug: string
           updated_at?: string
@@ -30,6 +36,9 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          meta_description?: string | null
+          meta_keywords?: string | null
+          meta_title?: string | null
           name?: string
           slug?: string
           updated_at?: string
@@ -43,7 +52,11 @@ export type Database = {
           content: string | null
           created_at: string
           excerpt: string | null
+          featured_image: string | null
           id: string
+          meta_description: string | null
+          meta_keywords: string | null
+          meta_title: string | null
           published_at: string | null
           slug: string
           title: string
@@ -55,7 +68,11 @@ export type Database = {
           content?: string | null
           created_at?: string
           excerpt?: string | null
+          featured_image?: string | null
           id?: string
+          meta_description?: string | null
+          meta_keywords?: string | null
+          meta_title?: string | null
           published_at?: string | null
           slug: string
           title: string
@@ -67,7 +84,11 @@ export type Database = {
           content?: string | null
           created_at?: string
           excerpt?: string | null
+          featured_image?: string | null
           id?: string
+          meta_description?: string | null
+          meta_keywords?: string | null
+          meta_title?: string | null
           published_at?: string | null
           slug?: string
           title?: string

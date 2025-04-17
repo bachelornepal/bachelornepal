@@ -14,6 +14,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminCategories from "./pages/admin/categories/AdminCategories";
 import CategoryForm from "./pages/admin/categories/CategoryForm";
 import AdminPosts from "./pages/admin/posts/AdminPosts";
+import PostForm from "./pages/admin/posts/PostForm";
 import { AuthProvider } from "./contexts/AuthContext";
 import { AuthGuard } from "./components/auth/AuthGuard";
 
@@ -40,6 +41,8 @@ const App = () => (
             <Route path="/admin/categories/new" element={<AuthGuard><CategoryForm /></AuthGuard>} />
             <Route path="/admin/categories/:id" element={<AuthGuard><CategoryForm /></AuthGuard>} />
             <Route path="/admin/posts" element={<AuthGuard><AdminPosts /></AuthGuard>} />
+            <Route path="/admin/posts/new" element={<AuthGuard><PostForm /></AuthGuard>} />
+            <Route path="/admin/posts/:id" element={<AuthGuard><PostForm /></AuthGuard>} />
             
             {/* 404 route */}
             <Route path="*" element={<NotFound />} />

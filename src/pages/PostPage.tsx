@@ -1,72 +1,90 @@
 
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { useEffect, useState } from "react";
 import { Category, Post } from "@/types";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2 } from "lucide-react";
 
 const PostPage = () => {
   const { categorySlug, postSlug } = useParams<{ categorySlug: string; postSlug: string }>();
+  const navigate = useNavigate();
   const [post, setPost] = useState<Post | null>(null);
   const [category, setCategory] = useState<Category | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // In a real app, this would fetch from Supabase
     const fetchPostAndCategory = async () => {
+      if (!categorySlug || !postSlug) return;
+      
       try {
         setLoading(true);
         
-        // Mock data - would come from Supabase in real implementation
-        const mockCategory: Category = {
-          id: "1",
-          name: categorySlug ? categorySlug.charAt(0).toUpperCase() + categorySlug.slice(1) : "Category",
-          slug: categorySlug || "",
-          description: `Articles and tutorials about ${categorySlug}`,
-        };
+        // First fetch the category
+        const { data: categoryData, error: categoryError } = await supabase
+          .from('categories')
+          .select('*')
+          .eq('slug', categorySlug)
+          .single();
         
-        const mockPost: Post = {
-          id: "1",
-          title: postSlug?.replace(/-/g, " ").replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase()) || "Post",
-          slug: postSlug || "",
-          content: `
-          <p>This is an example blog post content. In a real application, this would be rich text or markdown content stored in the database.</p>
-          <p>The content would be much more detailed and might include:</p>
-          <ul>
-            <li>Formatting like <strong>bold</strong> and <em>italic</em> text</li>
-            <li>Code samples</li>
-            <li>Images and other media</li>
-            <li>Links to other resources</li>
-          </ul>
-          <p>This is just placeholder text to demonstrate the layout of a blog post page.</p>
-          `,
-          excerpt: "This is an example blog post excerpt.",
-          category_id: "1",
-          author_id: "1",
-          published_at: new Date().toISOString(),
-          created_at: new Date().toISOString()
-        };
+        if (categoryError) {
+          throw categoryError;
+        }
+
+        setCategory({
+          id: categoryData.id,
+          name: categoryData.name,
+          slug: categoryData.slug,
+          description: categoryData.description || ""
+        });
         
-        setCategory(mockCategory);
-        setPost(mockPost);
+        // Then fetch the post
+        const { data: postData, error: postError } = await supabase
+          .from('posts')
+          .select('*')
+          .eq('slug', postSlug)
+          .eq('category_id', categoryData.id)
+          .single();
+        
+        if (postError) {
+          throw postError;
+        }
+        
+        setPost(postData);
       } catch (error) {
-        console.error("Error fetching post:", error);
+        console.error("Error fetching post data:", error);
+        // Redirect to 404 page after a short delay
+        setTimeout(() => {
+          navigate('/not-found', { replace: true });
+        }, 100);
       } finally {
         setLoading(false);
       }
     };
     
-    if (categorySlug && postSlug) {
-      fetchPostAndCategory();
-    }
-  }, [categorySlug, postSlug]);
+    fetchPostAndCategory();
+  }, [categorySlug, postSlug, navigate]);
 
-  if (loading || !post || !category) {
+  if (loading) {
     return (
       <Layout>
         <div className="container py-12">
           <div className="flex items-center justify-center h-64">
-            <p>Loading...</p>
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!post || !category) {
+    return (
+      <Layout>
+        <div className="container py-12">
+          <div className="flex flex-col items-center justify-center h-64">
+            <h2 className="text-2xl font-bold mb-4">Post Not Found</h2>
+            <p className="text-muted-foreground">The post you are looking for does not exist.</p>
           </div>
         </div>
       </Layout>
@@ -86,7 +104,7 @@ const PostPage = () => {
         <article className="mt-8 max-w-3xl mx-auto">
           <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
           <div className="flex items-center text-sm text-muted-foreground mb-8">
-            <span>Published on {new Date(post.published_at).toLocaleDateString()}</span>
+            <span>Published on {new Date(post.published_at || post.created_at).toLocaleDateString()}</span>
             <span className="mx-2">•</span>
             <span>Category: {category.name}</span>
           </div>
@@ -103,7 +121,7 @@ const PostPage = () => {
           
           <div 
             className="prose max-w-none"
-            dangerouslySetInnerHTML={{ __html: post.content }}
+            dangerouslySetInnerHTML={{ __html: post.content || "" }}
           />
         </article>
       </div>
