@@ -149,6 +149,11 @@ const PostForm = () => {
         throw new Error("User not authenticated");
       }
 
+      // Ensure we have a slug (required by the database schema)
+      if (!values.slug) {
+        values.slug = generateSlug(values.title);
+      }
+
       const postData = {
         ...values,
         author_id: userData.user.id,

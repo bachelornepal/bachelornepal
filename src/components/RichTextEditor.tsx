@@ -1,9 +1,8 @@
 import { useCallback, useMemo } from "react";
-import { createEditor, Descendant } from "slate";
-import { Slate, Editable, withReact, RenderElementProps, RenderLeafProps } from "slate-react";
-import { withHistory } from "slate-history";
+import { createEditor, Descendant, BaseEditor, Element as SlateElement } from "slate";
+import { Slate, Editable, withReact, ReactEditor, RenderElementProps, RenderLeafProps } from "slate-react";
+import { withHistory, HistoryEditor } from "slate-history";
 import { Button } from "@/components/ui/button";
-import { Toolbar } from "@/components/ui/toolbar";
 import {
   Bold,
   Italic,
@@ -27,35 +26,37 @@ interface RichTextEditorProps {
 }
 
 // Define the Slate custom types
+type CustomElement = {
+  type: 'paragraph' | 'heading-one' | 'heading-two' | 'heading-three' | 
+         'blockquote' | 'bulleted-list' | 'numbered-list' | 'list-item' |
+         'link' | 'image';
+  align?: 'left' | 'center' | 'right';
+  url?: string;
+  children: CustomText[];
+};
+
+type CustomText = {
+  text: string;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+};
+
 declare module 'slate' {
   interface CustomTypes {
     Editor: BaseEditor & ReactEditor & HistoryEditor;
-    Element: {
-      type: 'paragraph' | 'heading-one' | 'heading-two' | 'heading-three' | 
-             'blockquote' | 'bulleted-list' | 'numbered-list' | 'list-item' |
-             'link' | 'image';
-      align?: 'left' | 'center' | 'right';
-      url?: string;
-      children: Descendant[];
-    };
-    Text: {
-      text: string;
-      bold?: boolean;
-      italic?: boolean;
-      underline?: boolean;
-    };
+    Element: CustomElement;
+    Text: CustomText;
   }
 }
-
-// Import required types after declaration
-import { BaseEditor } from "slate";
-import { ReactEditor } from "slate-react";
-import { HistoryEditor } from "slate-history";
 
 const deserialize = (html: string): Descendant[] => {
   // Start with plain text deserialization
   if (!html || html.trim() === "") {
-    return [{ type: 'paragraph', children: [{ text: '' }] }];
+    return [{ 
+      type: 'paragraph' as const, 
+      children: [{ text: '' }] 
+    }];
   }
 
   // Try to parse HTML if it's HTML
@@ -66,48 +67,55 @@ const deserialize = (html: string): Descendant[] => {
     div.innerHTML = html;
     const paragraphs = Array.from(div.childNodes).map(node => {
       return {
-        type: 'paragraph',
+        type: 'paragraph' as const,
         children: [{ text: node.textContent || '' }]
       };
     });
     
-    return paragraphs.length ? paragraphs : [{ type: 'paragraph', children: [{ text: html }] }];
+    return paragraphs.length ? paragraphs : [{ 
+      type: 'paragraph' as const, 
+      children: [{ text: html }] 
+    }];
   } catch (error) {
     // If parsing fails, treat as plain text
-    return [{ type: 'paragraph', children: [{ text: html }] }];
+    return [{ 
+      type: 'paragraph' as const, 
+      children: [{ text: html }] 
+    }];
   }
 };
 
 const serialize = (nodes: Descendant[]): string => {
   // Convert the Slate nodes to HTML
   return nodes.map(node => {
-    if (!('type' in node)) {
+    if (!SlateElement.isElement(node)) {
       return node.text || '';
     }
 
-    switch (node.type) {
+    const element = node as CustomElement;
+    switch (element.type) {
       case 'paragraph':
-        return `<p>${node.children.map(n => 'text' in n ? n.text : '').join('')}</p>`;
+        return `<p>${element.children.map(n => n.text || '').join('')}</p>`;
       case 'heading-one':
-        return `<h1>${node.children.map(n => 'text' in n ? n.text : '').join('')}</h1>`;
+        return `<h1>${element.children.map(n => n.text || '').join('')}</h1>`;
       case 'heading-two':
-        return `<h2>${node.children.map(n => 'text' in n ? n.text : '').join('')}</h2>`;
+        return `<h2>${element.children.map(n => n.text || '').join('')}</h2>`;
       case 'heading-three':
-        return `<h3>${node.children.map(n => 'text' in n ? n.text : '').join('')}</h3>`;
+        return `<h3>${element.children.map(n => n.text || '').join('')}</h3>`;
       case 'blockquote':
-        return `<blockquote>${node.children.map(n => 'text' in n ? n.text : '').join('')}</blockquote>`;
+        return `<blockquote>${element.children.map(n => n.text || '').join('')}</blockquote>`;
       case 'bulleted-list':
-        return `<ul>${node.children.map(n => 'text' in n ? n.text : '').join('')}</ul>`;
+        return `<ul>${element.children.map(n => n.text || '').join('')}</ul>`;
       case 'numbered-list':
-        return `<ol>${node.children.map(n => 'text' in n ? n.text : '').join('')}</ol>`;
+        return `<ol>${element.children.map(n => n.text || '').join('')}</ol>`;
       case 'list-item':
-        return `<li>${node.children.map(n => 'text' in n ? n.text : '').join('')}</li>`;
+        return `<li>${element.children.map(n => n.text || '').join('')}</li>`;
       case 'link':
-        return `<a href="${node.url}">${node.children.map(n => 'text' in n ? n.text : '').join('')}</a>`;
+        return `<a href="${element.url}">${element.children.map(n => n.text || '').join('')}</a>`;
       case 'image':
-        return `<img src="${node.url}" alt="" />`;
+        return `<img src="${element.url}" alt="" />`;
       default:
-        return node.children.map(n => 'text' in n ? n.text : '').join('');
+        return element.children.map(n => n.text || '').join('');
     }
   }).join('');
 };
@@ -117,10 +125,12 @@ export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
   const editor = useMemo(() => withHistory(withReact(createEditor())), []);
 
   // Keep track of state for the value of the editor
-  const initialValue = useMemo(() => deserialize(value), [value]);
+  const initialValue = useMemo<Descendant[]>(() => deserialize(value), [value]);
 
   const renderElement = useCallback((props: RenderElementProps) => {
-    switch (props.element.type) {
+    const element = props.element as CustomElement;
+    
+    switch (element.type) {
       case 'heading-one':
         return <h1 {...props.attributes} className="text-3xl font-bold mt-4 mb-2">{props.children}</h1>;
       case 'heading-two':
@@ -136,11 +146,11 @@ export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
       case 'list-item':
         return <li {...props.attributes}>{props.children}</li>;
       case 'link':
-        return <a {...props.attributes} href={props.element.url} className="text-blue-500 underline">{props.children}</a>;
+        return <a {...props.attributes} href={element.url} className="text-blue-500 underline">{props.children}</a>;
       case 'image':
         return (
           <div {...props.attributes} contentEditable={false} className="my-4">
-            <img src={props.element.url} className="max-w-full h-auto" alt="" />
+            <img src={element.url} className="max-w-full h-auto" alt="" />
             {props.children}
           </div>
         );
