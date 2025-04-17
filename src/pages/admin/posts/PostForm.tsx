@@ -1,4 +1,3 @@
-
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -133,7 +132,6 @@ const PostForm = () => {
     const title = e.target.value;
     form.setValue("title", title);
     
-    // Only auto-generate slug if it's a new post or slug is empty
     if (!id || !form.getValues("slug")) {
       form.setValue("slug", generateSlug(title));
     }
@@ -149,13 +147,18 @@ const PostForm = () => {
         throw new Error("User not authenticated");
       }
 
-      // Ensure we have a slug (required by the database schema)
       if (!values.slug) {
         values.slug = generateSlug(values.title);
       }
 
+      if (!values.title) {
+        throw new Error("Post title is required");
+      }
+
       const postData = {
         ...values,
+        title: values.title,
+        slug: values.slug,
         author_id: userData.user.id,
         published_at: new Date().toISOString(),
       };
@@ -163,13 +166,11 @@ const PostForm = () => {
       let result;
       
       if (id) {
-        // Update existing post
         result = await supabase
           .from("posts")
           .update(postData)
           .eq("id", id);
       } else {
-        // Create new post
         result = await supabase
           .from("posts")
           .insert(postData)
