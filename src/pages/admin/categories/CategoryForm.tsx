@@ -60,7 +60,8 @@ const CategoryForm = () => {
             name: data.name || "",
             slug: data.slug || "",
             description: data.description || "",
-            image_url: data.image_url || "",
+            // Since image_url doesn't exist in the database, we'll use an empty string
+            image_url: "",
             meta_title: data.meta_title || "",
             meta_description: data.meta_description || "",
             meta_keywords: data.meta_keywords || ""
@@ -118,7 +119,7 @@ const CategoryForm = () => {
         name: formData.name,
         slug: formData.slug,
         description: formData.description,
-        image_url: formData.image_url,
+        // We won't send image_url to Supabase since it doesn't have this column
         meta_title: formData.meta_title,
         meta_description: formData.meta_description,
         meta_keywords: formData.meta_keywords

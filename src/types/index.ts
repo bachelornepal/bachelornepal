@@ -4,7 +4,11 @@ export interface Category {
   name: string;
   slug: string;
   description: string;
-  image_url?: string;
+  meta_title?: string;
+  meta_description?: string;
+  meta_keywords?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Post {
@@ -18,6 +22,9 @@ export interface Post {
   author_id: string;
   published_at: string;
   created_at: string;
+  meta_title?: string;
+  meta_description?: string;
+  meta_keywords?: string;
 }
 
 export interface User {

@@ -16,15 +16,8 @@ export function CategoryHeader({ category }: CategoryHeaderProps) {
       />
       <div className="flex items-center gap-4">
         <div className="flex-shrink-0 h-24 w-24 rounded-full bg-blue-100 flex items-center justify-center text-primary overflow-hidden">
-          {category.image_url ? (
-            <img 
-              src={category.image_url} 
-              alt={category.name} 
-              className="w-full h-full object-cover" 
-            />
-          ) : (
-            <span className="text-xl">Image</span>
-          )}
+          {/* Since image_url isn't in our database, we'll always show the fallback */}
+          <span className="text-xl">{category.name.charAt(0)}</span>
         </div>
         <div>
           <h1 className="text-3xl font-bold">{category.name}</h1>
