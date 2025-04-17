@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Category, Post } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
+import { SEO } from "@/components/SEO";
 
 const PostPage = () => {
   const { categorySlug, postSlug } = useParams<{ categorySlug: string; postSlug: string }>();
@@ -96,41 +97,54 @@ const PostPage = () => {
     );
   }
 
+  // Build URL for SEO metadata
+  const currentUrl = `/${category.slug}/${post.slug}`;
+
   return (
-    <Layout>
-      <div className="container py-12">
-        <Breadcrumb 
-          segments={[
-            { name: category.name, href: `/${category.slug}` },
-            { name: post.title, href: `/${category.slug}/${post.slug}` }
-          ]} 
-        />
-        
-        <article className="mt-8 max-w-3xl mx-auto">
-          <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
-          <div className="flex items-center text-sm text-muted-foreground mb-8">
-            <span>Published on {new Date(post.published_at || post.created_at).toLocaleDateString()}</span>
-            <span className="mx-2">•</span>
-            <span>Category: {category.name}</span>
-          </div>
-          
-          {post.featured_image && (
-            <div className="mb-8">
-              <img 
-                src={post.featured_image} 
-                alt={post.title} 
-                className="w-full h-auto rounded-lg" 
-              />
-            </div>
-          )}
-          
-          <div 
-            className="prose max-w-none"
-            dangerouslySetInnerHTML={{ __html: post.content || "" }}
+    <>
+      <SEO 
+        title={post.meta_title || post.title}
+        description={post.meta_description || post.excerpt || `${post.title} - ${category.name}`}
+        keywords={post.meta_keywords || category.meta_keywords || ""}
+        image={post.featured_image}
+        url={currentUrl}
+        type="article"
+      />
+      <Layout>
+        <div className="container py-12">
+          <Breadcrumb 
+            segments={[
+              { name: category.name, href: `/${category.slug}` },
+              { name: post.title, href: `/${category.slug}/${post.slug}` }
+            ]} 
           />
-        </article>
-      </div>
-    </Layout>
+          
+          <article className="mt-8 max-w-3xl mx-auto">
+            <h1 className="text-4xl font-bold mb-4">{post.title}</h1>
+            <div className="flex items-center text-sm text-muted-foreground mb-8">
+              <span>Published on {new Date(post.published_at || post.created_at).toLocaleDateString()}</span>
+              <span className="mx-2">•</span>
+              <span>Category: {category.name}</span>
+            </div>
+            
+            {post.featured_image && (
+              <div className="mb-8">
+                <img 
+                  src={post.featured_image} 
+                  alt={post.title} 
+                  className="w-full h-auto rounded-lg" 
+                />
+              </div>
+            )}
+            
+            <div 
+              className="prose max-w-none"
+              dangerouslySetInnerHTML={{ __html: post.content || "" }}
+            />
+          </article>
+        </div>
+      </Layout>
+    </>
   );
 };
 

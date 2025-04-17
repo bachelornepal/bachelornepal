@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { Category, Post } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
+import { SEO } from "@/components/SEO";
 
 const CategoryPage = () => {
   const { categorySlug } = useParams<{ categorySlug: string }>();
@@ -91,24 +92,35 @@ const CategoryPage = () => {
     );
   }
 
+  // Build URL for SEO metadata
+  const currentUrl = `/${category.slug}`;
+
   return (
-    <Layout>
-      <div className="container py-12">
-        <CategoryHeader category={category} />
-        
-        {posts.length > 0 ? (
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
-            {posts.map((post) => (
-              <PostCard key={post.id} post={post} categorySlug={category.slug} />
-            ))}
-          </div>
-        ) : (
-          <div className="mt-12 flex justify-center">
-            <p className="text-muted-foreground">No posts found in this category.</p>
-          </div>
-        )}
-      </div>
-    </Layout>
+    <>
+      <SEO 
+        title={category.meta_title || category.name}
+        description={category.meta_description || category.description || `Posts in ${category.name}`}
+        keywords={category.meta_keywords || ""}
+        url={currentUrl}
+      />
+      <Layout>
+        <div className="container py-12">
+          <CategoryHeader category={category} />
+          
+          {posts.length > 0 ? (
+            <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
+              {posts.map((post) => (
+                <PostCard key={post.id} post={post} categorySlug={category.slug} />
+              ))}
+            </div>
+          ) : (
+            <div className="mt-12 flex justify-center">
+              <p className="text-muted-foreground">No posts found in this category.</p>
+            </div>
+          )}
+        </div>
+      </Layout>
+    </>
   );
 };
 
