@@ -60,7 +60,7 @@ const Index = () => {
     fetchData();
   }, []);
 
-  const siteTitle = "Blog CMS";
+  const siteTitle = "BachelorNepal";
   const siteDescription = "Discover insightful articles across various categories";
 
   return (

@@ -40,9 +40,9 @@ const CategoryPage = () => {
           description: categoryData.description || "",
           created_at: categoryData.created_at,
           updated_at: categoryData.updated_at,
-          meta_title: categoryData.meta_title,
-          meta_description: categoryData.meta_description,
-          meta_keywords: categoryData.meta_keywords
+          meta_title: categoryData.meta_title || categoryData.name,
+          meta_description: categoryData.meta_description || categoryData.description || `Posts in ${categoryData.name}`,
+          meta_keywords: categoryData.meta_keywords || ""
         });
         
         // Then fetch posts for this category

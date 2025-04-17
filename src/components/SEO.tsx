@@ -20,7 +20,7 @@ export const SEO = ({
   url,
   children,
 }: SEOProps) => {
-  const siteTitle = "Blog CMS";
+  const siteTitle = "BachelorNepal";
   const fullTitle = title === siteTitle ? title : `${title} | ${siteTitle}`;
   
   return (
