@@ -98,7 +98,7 @@ const PostPage = () => {
   }
 
   // Build URL for SEO metadata
-  const currentUrl = `/${category.slug}/${post.slug}`;
+  const currentUrl = `${window.location.origin}/${category.slug}/${post.slug}`;
 
   return (
     <>

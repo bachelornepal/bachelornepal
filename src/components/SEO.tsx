@@ -22,26 +22,29 @@ export const SEO = ({
 }: SEOProps) => {
   const siteTitle = "BachelorNepal";
   const fullTitle = title === siteTitle ? title : `${title} | ${siteTitle}`;
+  const defaultDescription = "BachelorNepal - Educational Resources";
   
   return (
     <Helmet>
       {/* Basic meta tags */}
       <title>{fullTitle}</title>
-      {description && <meta name="description" content={description} />}
+      <meta name="description" content={description || defaultDescription} />
       {keywords && <meta name="keywords" content={keywords} />}
+      <meta name="author" content="BachelorNepal" />
       
       {/* Open Graph tags */}
       <meta property="og:title" content={fullTitle} />
-      {description && <meta property="og:description" content={description} />}
+      <meta property="og:description" content={description || defaultDescription} />
       <meta property="og:type" content={type} />
       {url && <meta property="og:url" content={url} />}
-      {image && <meta property="og:image" content={image} />}
+      <meta property="og:image" content={image || "https://lovable.dev/opengraph-image-p98pqg.png"} />
       
       {/* Twitter tags */}
       <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:site" content="@BachelorNepal" />
       <meta name="twitter:title" content={fullTitle} />
-      {description && <meta name="twitter:description" content={description} />}
-      {image && <meta name="twitter:image" content={image} />}
+      <meta name="twitter:description" content={description || defaultDescription} />
+      <meta name="twitter:image" content={image || "https://lovable.dev/opengraph-image-p98pqg.png"} />
       
       {children}
     </Helmet>

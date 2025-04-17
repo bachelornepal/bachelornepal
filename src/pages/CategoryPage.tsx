@@ -93,7 +93,7 @@ const CategoryPage = () => {
   }
 
   // Build URL for SEO metadata
-  const currentUrl = `/${category.slug}`;
+  const currentUrl = `${window.location.origin}/${category.slug}`;
 
   return (
     <>
