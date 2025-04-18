@@ -61,7 +61,17 @@ declare module 'slate' {
 }
 
 const deserialize = (html: string): Descendant[] => {
-  // Start with plain text deserialization
+  try {
+    // First, try to parse it as JSON (if it was previously saved as JSON)
+    const parsed = JSON.parse(html);
+    if (Array.isArray(parsed)) {
+      return parsed;
+    }
+  } catch (e) {
+    // Not valid JSON, continue with other deserialization attempts
+  }
+
+  // If it's empty or not valid JSON, provide an empty paragraph
   if (!html || html.trim() === "") {
     return [{ 
       type: 'paragraph' as const, 
@@ -69,25 +79,84 @@ const deserialize = (html: string): Descendant[] => {
     }];
   }
 
-  // Try to parse HTML if it's HTML
+  // Handle HTML content
   try {
-    // Simple deserialization for now, just extract text with paragraphs
-    // In a real app, you'd want a more sophisticated HTML parser
     const div = document.createElement('div');
     div.innerHTML = html;
-    const paragraphs = Array.from(div.childNodes).map(node => {
+    
+    // Simple parsing of common HTML elements
+    const parsed = Array.from(div.childNodes).map(node => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        return {
+          type: 'paragraph' as const,
+          children: [{ text: node.textContent || '' }]
+        };
+      }
+      
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        const element = node as Element;
+        const tagName = element.tagName.toLowerCase();
+        
+        switch (tagName) {
+          case 'h1':
+            return {
+              type: 'heading-one' as const,
+              children: [{ text: element.textContent || '' }]
+            };
+          case 'h2':
+            return {
+              type: 'heading-two' as const,
+              children: [{ text: element.textContent || '' }]
+            };
+          case 'h3':
+            return {
+              type: 'heading-three' as const,
+              children: [{ text: element.textContent || '' }]
+            };
+          case 'blockquote':
+            return {
+              type: 'blockquote' as const,
+              children: [{ text: element.textContent || '' }]
+            };
+          case 'ul':
+            return {
+              type: 'bulleted-list' as const,
+              children: Array.from(element.children).map(li => ({
+                type: 'list-item' as const,
+                children: [{ text: li.textContent || '' }]
+              }))
+            };
+          case 'ol':
+            return {
+              type: 'numbered-list' as const,
+              children: Array.from(element.children).map(li => ({
+                type: 'list-item' as const,
+                children: [{ text: li.textContent || '' }]
+              }))
+            };
+          default:
+            // Default to paragraph for other elements
+            return {
+              type: 'paragraph' as const,
+              children: [{ text: element.textContent || '' }]
+            };
+        }
+      }
+      
+      // Fallback
       return {
         type: 'paragraph' as const,
         children: [{ text: node.textContent || '' }]
       };
     });
     
-    return paragraphs.length ? paragraphs : [{ 
+    return parsed.length ? parsed : [{ 
       type: 'paragraph' as const, 
       children: [{ text: html }] 
     }];
   } catch (error) {
-    // If parsing fails, treat as plain text
+    console.error("Error deserializing content:", error);
+    // If all else fails, just return the content as plain text
     return [{ 
       type: 'paragraph' as const, 
       children: [{ text: html }] 
@@ -96,51 +165,8 @@ const deserialize = (html: string): Descendant[] => {
 };
 
 const serialize = (nodes: Descendant[]): string => {
-  // Convert the Slate nodes to HTML
-  return nodes.map(node => {
-    if (!SlateElement.isElement(node)) {
-      const text = node.text || '';
-      let result = text;
-      if (node.bold) result = `<strong>${result}</strong>`;
-      if (node.italic) result = `<em>${result}</em>`;
-      if (node.underline) result = `<u>${result}</u>`;
-      return result;
-    }
-
-    const element = node as CustomElement;
-    const children = element.children.map(child => {
-      let text = child.text || '';
-      if (child.bold) text = `<strong>${text}</strong>`;
-      if (child.italic) text = `<em>${text}</em>`;
-      if (child.underline) text = `<u>${text}</u>`;
-      return text;
-    }).join('');
-
-    switch (element.type) {
-      case 'paragraph':
-        return `<p>${children}</p>`;
-      case 'heading-one':
-        return `<h1>${children}</h1>`;
-      case 'heading-two':
-        return `<h2>${children}</h2>`;
-      case 'heading-three':
-        return `<h3>${children}</h3>`;
-      case 'blockquote':
-        return `<blockquote>${children}</blockquote>`;
-      case 'bulleted-list':
-        return `<ul>${children}</ul>`;
-      case 'numbered-list':
-        return `<ol>${children}</ol>`;
-      case 'list-item':
-        return `<li>${children}</li>`;
-      case 'link':
-        return `<a href="${element.url}">${children}</a>`;
-      case 'image':
-        return `<img src="${element.url}" alt="" />`;
-      default:
-        return children;
-    }
-  }).join('');
+  // Save as JSON to preserve structure
+  return JSON.stringify(nodes);
 };
 
 // Define a set of helpers to check if the current selection has a mark
@@ -190,15 +216,23 @@ const toggleBlock = (editor: Editor, format: CustomElement['type']) => {
     split: true,
   });
 
-  const newType = isActive ? 'paragraph' : format === 'list-item' ? 'paragraph' : format;
-
-  Transforms.setNodes(editor, {
-    type: newType,
-  } as Partial<CustomElement>);
-
-  if (!isActive && isList) {
-    const block = { type: format, children: [] } as CustomElement;
-    Transforms.wrapNodes(editor, block);
+  if (isActive) {
+    Transforms.setNodes(editor, {
+      type: 'paragraph'
+    } as Partial<CustomElement>);
+  } else {
+    if (isList) {
+      Transforms.setNodes(editor, {
+        type: 'list-item'
+      } as Partial<CustomElement>);
+      
+      const block = { type: format, children: [] } as CustomElement;
+      Transforms.wrapNodes(editor, block);
+    } else {
+      Transforms.setNodes(editor, {
+        type: format
+      } as Partial<CustomElement>);
+    }
   }
 };
 

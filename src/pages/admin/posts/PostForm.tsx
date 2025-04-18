@@ -259,7 +259,7 @@ const PostForm = () => {
             </TabsList>
             
             <TabsContent value="content" className="space-y-8">
-              <div className="space-y-6">
+              <div className="grid grid-cols-1 gap-6">
                 <FormField
                   control={form.control}
                   name="title"
@@ -298,34 +298,57 @@ const PostForm = () => {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="category_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Category</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        value={field.value}
-                      >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="category_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Category</FormLabel>
+                        <Select 
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a category" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {categories.map((category) => (
+                              <SelectItem key={category.id} value={category.id}>
+                                {category.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="excerpt"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Excerpt</FormLabel>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a category" />
-                          </SelectTrigger>
+                          <Textarea 
+                            placeholder="Brief summary of the post" 
+                            rows={3}
+                            {...field} 
+                          />
                         </FormControl>
-                        <SelectContent>
-                          {categories.map((category) => (
-                            <SelectItem key={category.id} value={category.id}>
-                              {category.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormDescription>
+                          A short description that appears in post listings.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
                 <FormField
                   control={form.control}
@@ -349,30 +372,9 @@ const PostForm = () => {
 
                 <FormField
                   control={form.control}
-                  name="excerpt"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Excerpt</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Brief summary of the post" 
-                          rows={3}
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        A short description that appears in post listings.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
                   name="content"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="col-span-full">
                       <FormLabel>Content</FormLabel>
                       <FormControl>
                         <div className="min-h-[500px] border rounded-lg">
