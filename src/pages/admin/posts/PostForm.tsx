@@ -1,4 +1,3 @@
-
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +14,7 @@ import { useForm } from "react-hook-form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ImageUpload } from "@/components/ImageUpload";
 
 interface Category {
   id: string;
@@ -251,143 +251,141 @@ const PostForm = () => {
       </div>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           <Tabs defaultValue="content" className="w-full">
             <TabsList className="mb-6">
               <TabsTrigger value="content">Content</TabsTrigger>
               <TabsTrigger value="seo">SEO</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="content" className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-6">
-                  <FormField
-                    control={form.control}
-                    name="title"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Title</FormLabel>
+            <TabsContent value="content" className="space-y-8">
+              <div className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Title</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Enter post title" 
+                          {...field}
+                          onChange={handleTitleChange}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="slug"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Slug</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="post-url-slug" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        The URL-friendly version of the title.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="category_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Category</FormLabel>
+                      <Select 
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        value={field.value}
+                      >
                         <FormControl>
-                          <Input 
-                            placeholder="Enter post title" 
-                            {...field}
-                            onChange={handleTitleChange}
-                          />
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a category" />
+                          </SelectTrigger>
                         </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                        <SelectContent>
+                          {categories.map((category) => (
+                            <SelectItem key={category.id} value={category.id}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                  <FormField
-                    control={form.control}
-                    name="slug"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Slug</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="post-url-slug" 
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          The URL-friendly version of the title.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <FormField
+                  control={form.control}
+                  name="featured_image"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Featured Image</FormLabel>
+                      <FormControl>
+                        <ImageUpload
+                          onImageUploaded={(url) => field.onChange(url)}
+                          currentImage={field.value}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Recommended size: 1200 x 628 pixels
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                  <FormField
-                    control={form.control}
-                    name="category_id"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Category</FormLabel>
-                        <Select 
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a category" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {categories.map((category) => (
-                              <SelectItem key={category.id} value={category.id}>
-                                {category.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <FormField
+                  control={form.control}
+                  name="excerpt"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Excerpt</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Brief summary of the post" 
+                          rows={3}
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        A short description that appears in post listings.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                  <FormField
-                    control={form.control}
-                    name="featured_image"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Featured Image URL</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="https://example.com/image.jpg" 
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Enter a URL for the post's featured image.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="excerpt"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Excerpt</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Brief summary of the post" 
-                            rows={3}
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          A short description that appears in post listings.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div>
-                  <FormField
-                    control={form.control}
-                    name="content"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col h-full">
-                        <FormLabel>Content</FormLabel>
-                        <div className="flex-grow">
+                <FormField
+                  control={form.control}
+                  name="content"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Content</FormLabel>
+                      <FormControl>
+                        <div className="min-h-[500px] border rounded-lg">
                           <RichTextEditor 
                             value={field.value || ""} 
                             onChange={field.onChange}
                           />
                         </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
             </TabsContent>
 
