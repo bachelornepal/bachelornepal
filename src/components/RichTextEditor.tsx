@@ -1,4 +1,3 @@
-
 import { useCallback, useMemo } from "react";
 import { createEditor, Descendant, BaseEditor, Element as SlateElement } from "slate";
 import { 
@@ -28,7 +27,7 @@ import {
   Link,
   Image
 } from "lucide-react";
-import { Editor, Transforms, Text } from "slate";
+import { Editor, Transforms, Text, Element, Node } from "slate";
 
 interface RichTextEditorProps {
   value: string;
@@ -60,23 +59,49 @@ declare module 'slate' {
   }
 }
 
+// Create a default paragraph node
+const createDefaultNode = (): CustomElement => ({
+  type: 'paragraph',
+  children: [{ text: '' }]
+});
+
+// Create a default editor content structure
+const createDefaultEditorContent = (): Descendant[] => {
+  return [createDefaultNode()];
+};
+
 const deserialize = (html: string): Descendant[] => {
   try {
     // First, try to parse it as JSON (if it was previously saved as JSON)
     const parsed = JSON.parse(html);
-    if (Array.isArray(parsed)) {
-      return parsed;
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      // Basic validation to ensure the structure is valid
+      const isValid = parsed.every(node => {
+        if (!node || typeof node !== 'object') return false;
+        if (!('type' in node) || !('children' in node)) return false;
+        if (!Array.isArray(node.children)) return false;
+        // Every child must have a 'text' property
+        if (node.type === 'list-item' || node.type === 'bulleted-list' || node.type === 'numbered-list') {
+          return node.children.every(child => 
+            child && typeof child === 'object' && 'children' in child &&
+            Array.isArray(child.children) && child.children.every(textNode => 'text' in textNode)
+          );
+        }
+        return node.children.every(child => child && typeof child === 'object' && 'text' in child);
+      });
+
+      if (isValid) {
+        return fixNodeStructure(parsed);
+      }
     }
   } catch (e) {
     // Not valid JSON, continue with other deserialization attempts
+    console.log("Error parsing JSON:", e);
   }
 
   // If it's empty or not valid JSON, provide an empty paragraph
   if (!html || html.trim() === "") {
-    return [{ 
-      type: 'paragraph' as const, 
-      children: [{ text: '' }] 
-    }];
+    return createDefaultEditorContent();
   }
 
   // Handle HTML content
@@ -150,23 +175,87 @@ const deserialize = (html: string): Descendant[] => {
       };
     });
     
-    return parsed.length ? parsed : [{ 
-      type: 'paragraph' as const, 
-      children: [{ text: html }] 
-    }];
+    // Ensure we have at least one node
+    const result = parsed.length ? fixNodeStructure(parsed) : createDefaultEditorContent();
+    return result;
   } catch (error) {
     console.error("Error deserializing content:", error);
     // If all else fails, just return the content as plain text
     return [{ 
       type: 'paragraph' as const, 
-      children: [{ text: html }] 
+      children: [{ text: html || '' }] 
     }];
   }
 };
 
+// Helper function to ensure proper node structure
+const fixNodeStructure = (nodes: any[]): Descendant[] => {
+  // Ensure all nodes have proper children
+  return nodes.map(node => {
+    // Handle list types differently
+    if (node.type === 'bulleted-list' || node.type === 'numbered-list') {
+      // Ensure list items have proper structure
+      const children = Array.isArray(node.children) ? node.children.map((item: any) => {
+        // Make sure each list item has a children array with at least one text node
+        const itemChildren = Array.isArray(item.children) && item.children.length > 0
+          ? item.children.map((child: any) => {
+              // If child is already a text node, use it
+              if (typeof child.text === 'string') return child;
+              // Otherwise, try to convert it
+              if (child.children && Array.isArray(child.children)) {
+                return { text: child.children.map((c: any) => c.text || '').join('') };
+              }
+              return { text: '' };
+            })
+          : [{ text: '' }];
+
+        return {
+          type: 'list-item',
+          children: itemChildren
+        };
+      }) : [{ type: 'list-item', children: [{ text: '' }] }];
+
+      return {
+        type: node.type,
+        children
+      };
+    }
+
+    // For non-list types, ensure children are text nodes
+    let children = Array.isArray(node.children) ? node.children : [];
+    
+    // If children is empty or doesn't contain text nodes, create a default text node
+    if (children.length === 0 || !children.some(child => typeof child.text === 'string')) {
+      children = [{ text: '' }];
+    }
+
+    return {
+      type: node.type || 'paragraph',
+      ...(node.align && { align: node.align }),
+      ...(node.url && { url: node.url }),
+      children
+    };
+  });
+};
+
 const serialize = (nodes: Descendant[]): string => {
+  // Make sure we're not saving empty/invalid nodes
+  const validNodes = nodes.filter(n => {
+    if (!n) return false;
+    // Element nodes must have children
+    if (SlateElement.isElement(n)) {
+      return Array.isArray(n.children) && n.children.length > 0;
+    }
+    return true;
+  });
+
+  // Return an empty string if there are no valid nodes
+  if (validNodes.length === 0) {
+    return '';
+  }
+
   // Save as JSON to preserve structure
-  return JSON.stringify(nodes);
+  return JSON.stringify(validNodes);
 };
 
 // Define a set of helpers to check if the current selection has a mark
@@ -190,49 +279,58 @@ const isBlockActive = (editor: Editor, format: CustomElement['type'], blockType 
   const { selection } = editor;
   if (!selection) return false;
 
-  const [match] = Array.from(
-    Editor.nodes(editor, {
-      at: Editor.unhangRange(editor, selection),
-      match: n =>
-        !Editor.isEditor(n) &&
-        SlateElement.isElement(n) &&
-        (n as CustomElement)[blockType as keyof CustomElement] === format,
-    })
-  );
+  try {
+    const [match] = Array.from(
+      Editor.nodes(editor, {
+        at: Editor.unhangRange(editor, selection),
+        match: n =>
+          !Editor.isEditor(n) &&
+          SlateElement.isElement(n) &&
+          (n as CustomElement)[blockType as keyof CustomElement] === format,
+      })
+    );
 
-  return !!match;
+    return !!match;
+  } catch (error) {
+    console.error("Error checking block active state:", error);
+    return false;
+  }
 };
 
 // Define a set of helpers to toggle block types
 const toggleBlock = (editor: Editor, format: CustomElement['type']) => {
-  const isActive = isBlockActive(editor, format);
-  const isList = ['numbered-list', 'bulleted-list'].includes(format);
+  try {
+    const isActive = isBlockActive(editor, format);
+    const isList = ['numbered-list', 'bulleted-list'].includes(format);
 
-  Transforms.unwrapNodes(editor, {
-    match: n =>
-      !Editor.isEditor(n) &&
-      SlateElement.isElement(n) &&
-      ['bulleted-list', 'numbered-list'].includes((n as CustomElement).type),
-    split: true,
-  });
+    Transforms.unwrapNodes(editor, {
+      match: n =>
+        !Editor.isEditor(n) &&
+        SlateElement.isElement(n) &&
+        ['bulleted-list', 'numbered-list'].includes((n as CustomElement).type),
+      split: true,
+    });
 
-  if (isActive) {
-    Transforms.setNodes(editor, {
-      type: 'paragraph'
-    } as Partial<CustomElement>);
-  } else {
-    if (isList) {
+    if (isActive) {
       Transforms.setNodes(editor, {
-        type: 'list-item'
+        type: 'paragraph'
       } as Partial<CustomElement>);
-      
-      const block = { type: format, children: [] } as CustomElement;
-      Transforms.wrapNodes(editor, block);
     } else {
-      Transforms.setNodes(editor, {
-        type: format
-      } as Partial<CustomElement>);
+      if (isList) {
+        Transforms.setNodes(editor, {
+          type: 'list-item'
+        } as Partial<CustomElement>);
+        
+        const block = { type: format, children: [] } as CustomElement;
+        Transforms.wrapNodes(editor, block);
+      } else {
+        Transforms.setNodes(editor, {
+          type: format
+        } as Partial<CustomElement>);
+      }
     }
+  } catch (error) {
+    console.error("Error toggling block:", error);
   }
 };
 
@@ -281,7 +379,15 @@ export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
   const editor = useMemo(() => withHistory(withReact(createEditor())), []);
 
   // Keep track of state for the value of the editor
-  const initialValue = useMemo<Descendant[]>(() => deserialize(value), [value]);
+  const initialValue = useMemo<Descendant[]>(() => {
+    try {
+      const content = deserialize(value);
+      return content;
+    } catch (error) {
+      console.error("Error initializing editor with value:", error);
+      return createDefaultEditorContent();
+    }
+  }, [value]);
 
   const renderElement = useCallback((props: RenderElementProps) => {
     const element = props.element as CustomElement;
@@ -339,12 +445,16 @@ export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
         editor={editor}
         initialValue={initialValue}
         onChange={value => {
-          const isAstChange = editor.operations.some(
-            op => op.type !== 'set_selection'
-          );
-          if (isAstChange) {
-            // Save the value to form field
-            onChange(serialize(value));
+          try {
+            const isAstChange = editor.operations.some(
+              op => op.type !== 'set_selection'
+            );
+            if (isAstChange) {
+              // Save the value to form field
+              onChange(serialize(value));
+            }
+          } catch (error) {
+            console.error("Error in Slate onChange:", error);
           }
         }}
       >
@@ -388,6 +498,9 @@ export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
             spellCheck
             autoFocus
             className="outline-none min-h-[200px]"
+            onKeyDown={(event) => {
+              // Add any key handlers if needed
+            }}
           />
         </div>
       </Slate>

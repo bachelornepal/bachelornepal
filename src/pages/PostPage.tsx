@@ -100,6 +100,49 @@ const PostPage = () => {
   // Build URL for SEO metadata
   const currentUrl = `${window.location.origin}/${category.slug}/${post.slug}`;
 
+  // Function to safely render post content
+  const renderPostContent = () => {
+    try {
+      // Try to parse content as JSON first (our new format)
+      const parsed = JSON.parse(post.content || "");
+      if (Array.isArray(parsed)) {
+        // Convert JSON structure to HTML
+        const htmlContent = parsed.map(node => {
+          switch (node.type) {
+            case 'paragraph':
+              return `<p>${node.children.map((c: any) => c.text).join('')}</p>`;
+            case 'heading-one':
+              return `<h1>${node.children.map((c: any) => c.text).join('')}</h1>`;
+            case 'heading-two':
+              return `<h2>${node.children.map((c: any) => c.text).join('')}</h2>`;
+            case 'heading-three':
+              return `<h3>${node.children.map((c: any) => c.text).join('')}</h3>`;
+            case 'blockquote':
+              return `<blockquote>${node.children.map((c: any) => c.text).join('')}</blockquote>`;
+            case 'bulleted-list':
+              const ulItems = node.children.map((item: any) => 
+                `<li>${item.children.map((c: any) => c.text).join('')}</li>`
+              ).join('');
+              return `<ul>${ulItems}</ul>`;
+            case 'numbered-list':
+              const olItems = node.children.map((item: any) => 
+                `<li>${item.children.map((c: any) => c.text).join('')}</li>`
+              ).join('');
+              return `<ol>${olItems}</ol>`;
+            default:
+              return `<p>${node.children.map((c: any) => c.text).join('')}</p>`;
+          }
+        }).join('');
+        return htmlContent;
+      }
+      // Fallback to the content as is
+      return post.content || "";
+    } catch (e) {
+      // If parsing fails, return the content as is
+      return post.content || "";
+    }
+  };
+
   return (
     <>
       <SEO 
@@ -139,7 +182,7 @@ const PostPage = () => {
             
             <div 
               className="prose max-w-none"
-              dangerouslySetInnerHTML={{ __html: post.content || "" }}
+              dangerouslySetInnerHTML={{ __html: renderPostContent() }}
             />
           </article>
         </div>
