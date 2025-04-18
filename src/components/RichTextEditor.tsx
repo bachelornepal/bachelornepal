@@ -111,6 +111,7 @@ const deserialize = (html: string): Descendant[] => {
     
     // Simple parsing of common HTML elements
     const parsed = Array.from(div.childNodes).map(node => {
+      // Handle text nodes
       if (node.nodeType === Node.TEXT_NODE) {
         return {
           type: 'paragraph' as const,
@@ -118,8 +119,9 @@ const deserialize = (html: string): Descendant[] => {
         };
       }
       
+      // Handle element nodes
       if (node.nodeType === Node.ELEMENT_NODE) {
-        const element = node as Element;
+        const element = node as HTMLElement;
         const tagName = element.tagName.toLowerCase();
         
         switch (tagName) {
@@ -171,7 +173,7 @@ const deserialize = (html: string): Descendant[] => {
       // Fallback
       return {
         type: 'paragraph' as const,
-        children: [{ text: node.textContent || '' }]
+        children: [{ text: (node as any).textContent || '' }]
       };
     });
     
@@ -374,6 +376,56 @@ const BlockButton = ({ format, icon: Icon }: { format: CustomElement['type'], ic
   );
 };
 
+const renderElement = (props: RenderElementProps) => {
+  const element = props.element as CustomElement;
+  
+  switch (element.type) {
+    case 'heading-one':
+      return <h1 {...props.attributes} className="text-3xl font-bold mt-4 mb-2">{props.children}</h1>;
+    case 'heading-two':
+      return <h2 {...props.attributes} className="text-2xl font-bold mt-3 mb-2">{props.children}</h2>;
+    case 'heading-three':
+      return <h3 {...props.attributes} className="text-xl font-bold mt-2 mb-1">{props.children}</h3>;
+    case 'blockquote':
+      return <blockquote {...props.attributes} className="border-l-4 border-gray-200 pl-4 italic my-4">{props.children}</blockquote>;
+    case 'bulleted-list':
+      return <ul {...props.attributes} className="list-disc ml-5 my-2">{props.children}</ul>;
+    case 'numbered-list':
+      return <ol {...props.attributes} className="list-decimal ml-5 my-2">{props.children}</ol>;
+    case 'list-item':
+      return <li {...props.attributes}>{props.children}</li>;
+    case 'link':
+      return <a {...props.attributes} href={element.url} className="text-blue-500 underline">{props.children}</a>;
+    case 'image':
+      return (
+        <div {...props.attributes} contentEditable={false} className="my-4">
+          <img src={element.url} className="max-w-full h-auto" alt="" />
+          {props.children}
+        </div>
+      );
+    default:
+      return <p {...props.attributes} className="my-2">{props.children}</p>;
+  }
+};
+
+const renderLeaf = (props: RenderLeafProps) => {
+  let { children } = props;
+  
+  if (props.leaf.bold) {
+    children = <strong>{children}</strong>;
+  }
+  
+  if (props.leaf.italic) {
+    children = <em>{children}</em>;
+  }
+  
+  if (props.leaf.underline) {
+    children = <u>{children}</u>;
+  }
+  
+  return <span {...props.attributes}>{children}</span>;
+};
+
 export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
   // Create a Slate editor object that won't change across renders
   const editor = useMemo(() => withHistory(withReact(createEditor())), []);
@@ -389,55 +441,7 @@ export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
     }
   }, [value]);
 
-  const renderElement = useCallback((props: RenderElementProps) => {
-    const element = props.element as CustomElement;
-    
-    switch (element.type) {
-      case 'heading-one':
-        return <h1 {...props.attributes} className="text-3xl font-bold mt-4 mb-2">{props.children}</h1>;
-      case 'heading-two':
-        return <h2 {...props.attributes} className="text-2xl font-bold mt-3 mb-2">{props.children}</h2>;
-      case 'heading-three':
-        return <h3 {...props.attributes} className="text-xl font-bold mt-2 mb-1">{props.children}</h3>;
-      case 'blockquote':
-        return <blockquote {...props.attributes} className="border-l-4 border-gray-200 pl-4 italic my-4">{props.children}</blockquote>;
-      case 'bulleted-list':
-        return <ul {...props.attributes} className="list-disc ml-5 my-2">{props.children}</ul>;
-      case 'numbered-list':
-        return <ol {...props.attributes} className="list-decimal ml-5 my-2">{props.children}</ol>;
-      case 'list-item':
-        return <li {...props.attributes}>{props.children}</li>;
-      case 'link':
-        return <a {...props.attributes} href={element.url} className="text-blue-500 underline">{props.children}</a>;
-      case 'image':
-        return (
-          <div {...props.attributes} contentEditable={false} className="my-4">
-            <img src={element.url} className="max-w-full h-auto" alt="" />
-            {props.children}
-          </div>
-        );
-      default:
-        return <p {...props.attributes} className="my-2">{props.children}</p>;
-    }
-  }, []);
-
-  const renderLeaf = useCallback((props: RenderLeafProps) => {
-    let { children } = props;
-    
-    if (props.leaf.bold) {
-      children = <strong>{children}</strong>;
-    }
-    
-    if (props.leaf.italic) {
-      children = <em>{children}</em>;
-    }
-    
-    if (props.leaf.underline) {
-      children = <u>{children}</u>;
-    }
-    
-    return <span {...props.attributes}>{children}</span>;
-  }, []);
+  const renderElementCallback = useCallback(renderElement, []);
 
   return (
     <div className="border rounded-md overflow-hidden">
@@ -492,7 +496,7 @@ export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
         </div>
         <div className="p-4 min-h-[200px] prose max-w-none">
           <Editable
-            renderElement={renderElement}
+            renderElement={renderElementCallback}
             renderLeaf={renderLeaf}
             placeholder="Start writing..."
             spellCheck
