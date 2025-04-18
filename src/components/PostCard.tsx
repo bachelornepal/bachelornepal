@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -12,15 +11,17 @@ interface PostCardProps {
 export function PostCard({ post, categorySlug }: PostCardProps) {
   return (
     <Card className="overflow-hidden">
-      <div className="h-[200px] bg-primary flex items-center justify-center text-white text-xl font-semibold">
+      <div className="relative w-full aspect-[1200/628] bg-primary">
         {post.featured_image ? (
           <img 
             src={post.featured_image} 
             alt={post.title} 
-            className="w-full h-full object-cover" 
+            className="absolute w-full h-full object-cover" 
           />
         ) : (
-          post.title
+          <div className="flex items-center justify-center h-full text-white text-xl font-semibold">
+            {post.title}
+          </div>
         )}
       </div>
       <CardContent className="p-6">
