@@ -1,6 +1,15 @@
+
 import { useCallback, useMemo } from "react";
 import { createEditor, Descendant, BaseEditor, Element as SlateElement } from "slate";
-import { Slate, Editable, withReact, ReactEditor, RenderElementProps, RenderLeafProps } from "slate-react";
+import { 
+  Slate, 
+  Editable, 
+  withReact, 
+  ReactEditor, 
+  RenderElementProps, 
+  RenderLeafProps,
+  useSlate 
+} from "slate-react";
 import { withHistory, HistoryEditor } from "slate-history";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +28,7 @@ import {
   Link,
   Image
 } from "lucide-react";
+import { Editor, Transforms, Text } from "slate";
 
 interface RichTextEditorProps {
   value: string;
@@ -89,35 +99,147 @@ const serialize = (nodes: Descendant[]): string => {
   // Convert the Slate nodes to HTML
   return nodes.map(node => {
     if (!SlateElement.isElement(node)) {
-      return node.text || '';
+      const text = node.text || '';
+      let result = text;
+      if (node.bold) result = `<strong>${result}</strong>`;
+      if (node.italic) result = `<em>${result}</em>`;
+      if (node.underline) result = `<u>${result}</u>`;
+      return result;
     }
 
     const element = node as CustomElement;
+    const children = element.children.map(child => {
+      let text = child.text || '';
+      if (child.bold) text = `<strong>${text}</strong>`;
+      if (child.italic) text = `<em>${text}</em>`;
+      if (child.underline) text = `<u>${text}</u>`;
+      return text;
+    }).join('');
+
     switch (element.type) {
       case 'paragraph':
-        return `<p>${element.children.map(n => n.text || '').join('')}</p>`;
+        return `<p>${children}</p>`;
       case 'heading-one':
-        return `<h1>${element.children.map(n => n.text || '').join('')}</h1>`;
+        return `<h1>${children}</h1>`;
       case 'heading-two':
-        return `<h2>${element.children.map(n => n.text || '').join('')}</h2>`;
+        return `<h2>${children}</h2>`;
       case 'heading-three':
-        return `<h3>${element.children.map(n => n.text || '').join('')}</h3>`;
+        return `<h3>${children}</h3>`;
       case 'blockquote':
-        return `<blockquote>${element.children.map(n => n.text || '').join('')}</blockquote>`;
+        return `<blockquote>${children}</blockquote>`;
       case 'bulleted-list':
-        return `<ul>${element.children.map(n => n.text || '').join('')}</ul>`;
+        return `<ul>${children}</ul>`;
       case 'numbered-list':
-        return `<ol>${element.children.map(n => n.text || '').join('')}</ol>`;
+        return `<ol>${children}</ol>`;
       case 'list-item':
-        return `<li>${element.children.map(n => n.text || '').join('')}</li>`;
+        return `<li>${children}</li>`;
       case 'link':
-        return `<a href="${element.url}">${element.children.map(n => n.text || '').join('')}</a>`;
+        return `<a href="${element.url}">${children}</a>`;
       case 'image':
         return `<img src="${element.url}" alt="" />`;
       default:
-        return element.children.map(n => n.text || '').join('');
+        return children;
     }
   }).join('');
+};
+
+// Define a set of helpers to check if the current selection has a mark
+const isMarkActive = (editor: Editor, format: keyof Omit<CustomText, 'text'>) => {
+  const marks = Editor.marks(editor);
+  return marks ? marks[format] === true : false;
+};
+
+// Define a set of helpers to toggle marks
+const toggleMark = (editor: Editor, format: keyof Omit<CustomText, 'text'>) => {
+  const isActive = isMarkActive(editor, format);
+  if (isActive) {
+    Editor.removeMark(editor, format);
+  } else {
+    Editor.addMark(editor, format, true);
+  }
+};
+
+// Define a set of helpers to check if the current selection has a block type
+const isBlockActive = (editor: Editor, format: CustomElement['type'], blockType = 'type') => {
+  const { selection } = editor;
+  if (!selection) return false;
+
+  const [match] = Array.from(
+    Editor.nodes(editor, {
+      at: Editor.unhangRange(editor, selection),
+      match: n =>
+        !Editor.isEditor(n) &&
+        SlateElement.isElement(n) &&
+        (n as CustomElement)[blockType as keyof CustomElement] === format,
+    })
+  );
+
+  return !!match;
+};
+
+// Define a set of helpers to toggle block types
+const toggleBlock = (editor: Editor, format: CustomElement['type']) => {
+  const isActive = isBlockActive(editor, format);
+  const isList = ['numbered-list', 'bulleted-list'].includes(format);
+
+  Transforms.unwrapNodes(editor, {
+    match: n =>
+      !Editor.isEditor(n) &&
+      SlateElement.isElement(n) &&
+      ['bulleted-list', 'numbered-list'].includes((n as CustomElement).type),
+    split: true,
+  });
+
+  const newType = isActive ? 'paragraph' : format === 'list-item' ? 'paragraph' : format;
+
+  Transforms.setNodes(editor, {
+    type: newType,
+  } as Partial<CustomElement>);
+
+  if (!isActive && isList) {
+    const block = { type: format, children: [] } as CustomElement;
+    Transforms.wrapNodes(editor, block);
+  }
+};
+
+// Define a button component for marks
+const MarkButton = ({ format, icon: Icon }: { format: keyof Omit<CustomText, 'text'>, icon: React.FC<any> }) => {
+  const editor = useSlate();
+  
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      type="button"
+      onMouseDown={(event) => {
+        event.preventDefault();
+        toggleMark(editor, format);
+      }}
+      className={isMarkActive(editor, format) ? "bg-muted" : ""}
+    >
+      <Icon className="h-4 w-4" />
+    </Button>
+  );
+};
+
+// Define a button component for blocks
+const BlockButton = ({ format, icon: Icon }: { format: CustomElement['type'], icon: React.FC<any> }) => {
+  const editor = useSlate();
+  
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      type="button"
+      onMouseDown={(event) => {
+        event.preventDefault();
+        toggleBlock(editor, format);
+      }}
+      className={isBlockActive(editor, format) ? "bg-muted" : ""}
+    >
+      <Icon className="h-4 w-4" />
+    </Button>
+  );
 };
 
 export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
@@ -177,13 +299,6 @@ export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
     return <span {...props.attributes}>{children}</span>;
   }, []);
 
-  // Define toolbar button actions
-  const toggleFormat = (format: 'bold' | 'italic' | 'underline') => {
-    // This is a simplified version - in a real editor you would implement
-    // proper toggling of formats using Slate's transformations
-    console.log(`Toggle format: ${format}`);
-  };
-
   return (
     <div className="border rounded-md overflow-hidden">
       <Slate
@@ -200,50 +315,34 @@ export const RichTextEditor = ({ value, onChange }: RichTextEditorProps) => {
         }}
       >
         <div className="border-b bg-muted p-2 flex flex-wrap gap-1">
-          <Button variant="ghost" size="icon" type="button" onClick={() => toggleFormat('bold')}>
-            <Bold className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" type="button" onClick={() => toggleFormat('italic')}>
-            <Italic className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" type="button" onClick={() => toggleFormat('underline')}>
-            <Underline className="h-4 w-4" />
-          </Button>
+          <MarkButton format="bold" icon={Bold} />
+          <MarkButton format="italic" icon={Italic} />
+          <MarkButton format="underline" icon={Underline} />
           <div className="w-px h-6 bg-border mx-1 self-center" />
-          <Button variant="ghost" size="icon" type="button">
-            <Heading1 className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" type="button">
-            <Heading2 className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" type="button">
-            <Heading3 className="h-4 w-4" />
-          </Button>
+          <BlockButton format="heading-one" icon={Heading1} />
+          <BlockButton format="heading-two" icon={Heading2} />
+          <BlockButton format="heading-three" icon={Heading3} />
           <div className="w-px h-6 bg-border mx-1 self-center" />
-          <Button variant="ghost" size="icon" type="button">
-            <List className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" type="button">
-            <ListOrdered className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" type="button">
-            <Quote className="h-4 w-4" />
-          </Button>
+          <BlockButton format="bulleted-list" icon={List} />
+          <BlockButton format="numbered-list" icon={ListOrdered} />
+          <BlockButton format="blockquote" icon={Quote} />
           <div className="w-px h-6 bg-border mx-1 self-center" />
-          <Button variant="ghost" size="icon" type="button">
+          {/* Disabled buttons below until we implement their functionality */}
+          <Button variant="ghost" size="icon" type="button" disabled>
             <Link className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" type="button">
+          <Button variant="ghost" size="icon" type="button" disabled>
             <Image className="h-4 w-4" />
           </Button>
           <div className="w-px h-6 bg-border mx-1 self-center" />
-          <Button variant="ghost" size="icon" type="button">
+          {/* Disabled alignment buttons for now */}
+          <Button variant="ghost" size="icon" type="button" disabled>
             <AlignLeft className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" type="button">
+          <Button variant="ghost" size="icon" type="button" disabled>
             <AlignCenter className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" type="button">
+          <Button variant="ghost" size="icon" type="button" disabled>
             <AlignRight className="h-4 w-4" />
           </Button>
         </div>

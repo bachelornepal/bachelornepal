@@ -48,7 +48,7 @@ export function ImageUpload({ onImageUploaded, currentImage }: ImageUploadProps)
   return (
     <div className="space-y-4">
       {currentImage && (
-        <div className="relative w-[1200px] h-[628px] border rounded-lg overflow-hidden">
+        <div className="relative w-full max-w-[1200px] h-[628px] border rounded-lg overflow-hidden bg-muted">
           <img 
             src={currentImage} 
             alt="Featured" 
