@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,6 +17,9 @@ import PostForm from "./pages/admin/posts/PostForm";
 import { AuthProvider } from "./contexts/AuthContext";
 import { AuthGuard } from "./components/auth/AuthGuard";
 import { HelmetProvider } from "react-helmet-async";
+import AboutUs from "./pages/AboutUs";
+import ContactUs from "./pages/ContactUs";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +38,9 @@ const App = () => (
               <Route path="/:categorySlug/:postSlug" element={<PostPage />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/about-us" element={<AboutUs />} />
+              <Route path="/contact-us" element={<ContactUs />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               
               {/* Protected admin routes */}
               <Route path="/admin" element={<AuthGuard><AdminDashboard /></AuthGuard>} />

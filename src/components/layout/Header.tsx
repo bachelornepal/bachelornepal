@@ -29,9 +29,9 @@ export function Header({ session }: HeaderProps) {
       } else {
         console.error('Error fetching categories:', error);
         setCategories([
-          { name: "Development", slug: "development" },
-          { name: "Design", slug: "design" },
-          { name: "Business", slug: "business" }
+          { name: "BCA", slug: "bca" },
+          { name: "BIM", slug: "bim" },
+          { name: "CSIT", slug: "csit" }
         ]);
       }
     };
@@ -67,15 +67,28 @@ export function Header({ session }: HeaderProps) {
             <Link to="/" className="text-sm font-medium transition-colors hover:text-primary">
               Home
             </Link>
-            {categories.map((category) => (
-              <Link 
-                key={category.slug}
-                to={`/${category.slug}`} 
-                className="text-sm font-medium transition-colors hover:text-primary"
-              >
-                {category.name}
-              </Link>
-            ))}
+            <div className="relative group">
+              <span className="text-sm font-medium transition-colors hover:text-primary cursor-pointer">
+                Courses
+              </span>
+              <div className="absolute left-0 mt-2 w-48 bg-white border rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                {categories.map((category) => (
+                  <Link 
+                    key={category.slug}
+                    to={`/${category.slug}`} 
+                    className="block px-4 py-2 text-sm hover:bg-gray-100"
+                  >
+                    {category.name}
+                  </Link>
+                ))}
+              </div>
+            </div>
+            <Link to="/about-us" className="text-sm font-medium transition-colors hover:text-primary">
+              About Us
+            </Link>
+            <Link to="/contact-us" className="text-sm font-medium transition-colors hover:text-primary">
+              Contact Us
+            </Link>
           </nav>
         </div>
         <div className="flex items-center space-x-4">
@@ -86,7 +99,7 @@ export function Header({ session }: HeaderProps) {
               onClick={() => navigate("/admin")}
             >
               <Pencil className="mr-2 h-4 w-4" />
-              Admin
+              Pages
             </Button>
           ) : (
             <Button
