@@ -185,11 +185,11 @@ const PostPage = () => {
             </div>
             
             {post.featured_image && (
-              <div className="mb-8">
+              <div className="mb-8 w-full aspect-[1200/628] relative overflow-hidden rounded-lg">
                 <img 
                   src={post.featured_image} 
                   alt={post.title} 
-                  className="w-full h-auto rounded-lg" 
+                  className="absolute w-full h-full object-cover" 
                 />
               </div>
             )}
