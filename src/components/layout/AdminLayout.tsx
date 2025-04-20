@@ -1,7 +1,7 @@
 
 import { ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { BookOpen, FolderOpen, Home, LogOut, Settings, User } from "lucide-react";
+import { BookOpen, FolderOpen, Home, LogOut, Settings, User, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,6 +20,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     { href: "/admin", label: "Dashboard", icon: Home },
     { href: "/admin/posts", label: "Posts", icon: BookOpen },
     { href: "/admin/categories", label: "Categories", icon: FolderOpen },
+    { href: "/admin/media", label: "Media", icon: Image },
     { href: "/admin/profile", label: "Profile", icon: User },
     { href: "/admin/settings", label: "Settings", icon: Settings },
   ];

@@ -10,6 +10,7 @@ import NotFound from "./pages/NotFound";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import MediaLibrary from "./pages/admin/media/MediaLibrary";
 import AdminCategories from "./pages/admin/categories/AdminCategories";
 import CategoryForm from "./pages/admin/categories/CategoryForm";
 import AdminPosts from "./pages/admin/posts/AdminPosts";
@@ -44,6 +45,7 @@ const App = () => (
               
               {/* Protected admin routes */}
               <Route path="/admin" element={<AuthGuard><AdminDashboard /></AuthGuard>} />
+              <Route path="/admin/media" element={<AuthGuard><MediaLibrary /></AuthGuard>} />
               <Route path="/admin/categories" element={<AuthGuard><AdminCategories /></AuthGuard>} />
               <Route path="/admin/categories/new" element={<AuthGuard><CategoryForm /></AuthGuard>} />
               <Route path="/admin/categories/:id" element={<AuthGuard><CategoryForm /></AuthGuard>} />
