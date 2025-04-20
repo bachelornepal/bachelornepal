@@ -1,3 +1,4 @@
+
 import { useCallback, useMemo } from "react";
 import { createEditor, Descendant, BaseEditor, Element as SlateElement } from "slate";
 import { 
@@ -109,18 +110,18 @@ const deserialize = (html: string): Descendant[] => {
     const div = document.createElement('div');
     div.innerHTML = html;
     
-    // Simple parsing of common HTML elements
+    // Simple parsing of common HTML elements using DOM constants directly
     const parsed = Array.from(div.childNodes).map(node => {
-      // Handle text nodes
-      if (node.nodeType === Node.TEXT_NODE) {
+      // Handle text nodes - use the actual numeric values instead of Node.TEXT_NODE
+      if (node.nodeType === 3) { // 3 is Node.TEXT_NODE
         return {
           type: 'paragraph' as const,
           children: [{ text: node.textContent || '' }]
         };
       }
       
-      // Handle element nodes
-      if (node.nodeType === Node.ELEMENT_NODE) {
+      // Handle element nodes - use the actual numeric value instead of Node.ELEMENT_NODE
+      if (node.nodeType === 1) { // 1 is Node.ELEMENT_NODE
         const element = node as HTMLElement;
         const tagName = element.tagName.toLowerCase();
         
@@ -173,7 +174,7 @@ const deserialize = (html: string): Descendant[] => {
       // Fallback
       return {
         type: 'paragraph' as const,
-        children: [{ text: (node as any).textContent || '' }]
+        children: [{ text: '' }]
       };
     });
     
