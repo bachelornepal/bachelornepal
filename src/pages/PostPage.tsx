@@ -124,17 +124,21 @@ const PostPage = () => {
             case 'blockquote':
               return `<blockquote>${node.children.map((c: any) => c.text || '').join('')}</blockquote>`;
             case 'bulleted-list':
-              const ulItems = node.children.map((item: any) => {
-                if (!item || !item.children) return '';
-                return `<li>${item.children.map((c: any) => c.text || '').join('')}</li>`;
-              }).join('');
-              return `<ul>${ulItems}</ul>`;
+              // Handle bulleted lists properly
+              return `<ul class="list-disc ml-6 my-2">${node.children
+                .map((item: any) => {
+                  if (!item || !item.children) return '';
+                  return `<li>${item.children.map((c: any) => c.text || '').join('')}</li>`;
+                })
+                .join('')}</ul>`;
             case 'numbered-list':
-              const olItems = node.children.map((item: any) => {
-                if (!item || !item.children) return '';
-                return `<li>${item.children.map((c: any) => c.text || '').join('')}</li>`;
-              }).join('');
-              return `<ol>${olItems}</ol>`;
+              // Handle numbered lists properly
+              return `<ol class="list-decimal ml-6 my-2">${node.children
+                .map((item: any) => {
+                  if (!item || !item.children) return '';
+                  return `<li>${item.children.map((c: any) => c.text || '').join('')}</li>`;
+                })
+                .join('')}</ol>`;
             default:
               if (node.children && Array.isArray(node.children)) {
                 return `<p>${node.children.map((c: any) => c.text || '').join('')}</p>`;
@@ -147,6 +151,7 @@ const PostPage = () => {
       // Fallback to the content as is
       return post.content || "";
     } catch (e) {
+      console.error("Error rendering post content:", e);
       // If parsing fails, return the content as is
       return post.content || "";
     }
