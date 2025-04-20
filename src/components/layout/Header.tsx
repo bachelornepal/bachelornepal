@@ -1,8 +1,7 @@
-
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
-import { Pencil, LogIn } from "lucide-react";
+import { Pencil } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -18,7 +17,6 @@ export function Header({ session }: HeaderProps) {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    // Get categories from Supabase
     const fetchCategories = async () => {
       const { data, error } = await supabase
         .from('categories')
@@ -38,7 +36,6 @@ export function Header({ session }: HeaderProps) {
 
     fetchCategories();
 
-    // Check for current user session
     const fetchUser = async () => {
       const { data } = await supabase.auth.getUser();
       setUser(data.user);
@@ -46,7 +43,6 @@ export function Header({ session }: HeaderProps) {
 
     fetchUser();
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setUser(session?.user || null);
@@ -62,7 +58,7 @@ export function Header({ session }: HeaderProps) {
     <header className="border-b">
       <div className="container flex items-center justify-between py-4">
         <div className="flex items-center space-x-8">
-          <Link to="/" className="text-2xl font-bold">BachelorNepal</Link>
+          <Link to="/" className="text-2xl font-bold">Bachelor Nepal</Link>
           <nav className="hidden md:flex items-center space-x-6">
             <Link to="/" className="text-sm font-medium transition-colors hover:text-primary">
               Home
@@ -92,7 +88,7 @@ export function Header({ session }: HeaderProps) {
           </nav>
         </div>
         <div className="flex items-center space-x-4">
-          {user ? (
+          {user && (
             <Button 
               variant="outline" 
               size="sm" 
@@ -100,15 +96,6 @@ export function Header({ session }: HeaderProps) {
             >
               <Pencil className="mr-2 h-4 w-4" />
               Pages
-            </Button>
-          ) : (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate("/login")}
-            >
-              <LogIn className="mr-2 h-4 w-4" />
-              Login
             </Button>
           )}
         </div>

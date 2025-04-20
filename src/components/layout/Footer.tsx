@@ -7,7 +7,7 @@ export function Footer() {
       <div className="container py-8">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           <div>
-            <Link to="/" className="text-xl font-bold">BachelorNepal</Link>
+            <Link to="/" className="text-xl font-bold">Bachelor Nepal</Link>
             <p className="mt-2 text-sm text-muted-foreground">
               Your comprehensive guide to bachelor's degrees in Nepal
             </p>

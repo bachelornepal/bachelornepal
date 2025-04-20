@@ -12,19 +12,21 @@ interface PostCardProps {
 export function PostCard({ post, categorySlug }: PostCardProps) {
   return (
     <Card className="overflow-hidden">
-      <div className="relative w-full aspect-[1200/628] bg-primary">
-        {post.featured_image ? (
-          <img 
-            src={post.featured_image} 
-            alt={post.title} 
-            className="absolute w-full h-full object-cover" 
-          />
-        ) : (
-          <div className="flex items-center justify-center h-full text-white text-xl font-semibold">
-            {post.title}
-          </div>
-        )}
-      </div>
+      <Link to={`/${categorySlug}/${post.slug}`}>
+        <div className="relative w-full aspect-[1200/628] bg-primary">
+          {post.featured_image ? (
+            <img 
+              src={post.featured_image} 
+              alt={post.title} 
+              className="absolute w-full h-full object-cover" 
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full text-white text-xl font-semibold">
+              {post.title}
+            </div>
+          )}
+        </div>
+      </Link>
       <CardContent className="p-6">
         <h3 className="text-xl font-bold">{post.title}</h3>
         <p className="mt-2 text-muted-foreground">{post.excerpt}</p>
