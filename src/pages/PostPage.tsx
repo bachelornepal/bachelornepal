@@ -1,4 +1,3 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -103,56 +102,67 @@ const PostPage = () => {
   // Function to safely render post content
   const renderPostContent = () => {
     try {
-      // Try to parse content as JSON first (our new format)
-      const parsed = JSON.parse(post.content || "[]");
-      if (Array.isArray(parsed)) {
-        // Convert JSON structure to HTML
-        const htmlContent = parsed.map(node => {
-          if (!node || !node.type || !node.children) {
-            return ''; // Skip invalid nodes
-          }
-          
-          switch (node.type) {
-            case 'paragraph':
-              return `<p>${node.children.map((c: any) => c.text || '').join('')}</p>`;
-            case 'heading-one':
-              return `<h1>${node.children.map((c: any) => c.text || '').join('')}</h1>`;
-            case 'heading-two':
-              return `<h2>${node.children.map((c: any) => c.text || '').join('')}</h2>`;
-            case 'heading-three':
-              return `<h3>${node.children.map((c: any) => c.text || '').join('')}</h3>`;
-            case 'blockquote':
-              return `<blockquote>${node.children.map((c: any) => c.text || '').join('')}</blockquote>`;
-            case 'bulleted-list':
-              // Handle bulleted lists properly
-              return `<ul class="list-disc ml-6 my-2">${node.children
-                .map((item: any) => {
-                  if (!item || !item.children) return '';
-                  return `<li>${item.children.map((c: any) => c.text || '').join('')}</li>`;
-                })
-                .join('')}</ul>`;
-            case 'numbered-list':
-              // Handle numbered lists properly
-              return `<ol class="list-decimal ml-6 my-2">${node.children
-                .map((item: any) => {
-                  if (!item || !item.children) return '';
-                  return `<li>${item.children.map((c: any) => c.text || '').join('')}</li>`;
-                })
-                .join('')}</ol>`;
-            default:
-              if (node.children && Array.isArray(node.children)) {
-                return `<p>${node.children.map((c: any) => c.text || '').join('')}</p>`;
-              }
-              return '';
-          }
-        }).join('');
-        return htmlContent;
+      // If content is empty or undefined
+      if (!post.content || post.content.trim() === "") {
+        return "";
       }
-      // Fallback to the content as is
-      return post.content || "";
+
+      // Try to parse content as JSON first (old format)
+      try {
+        const parsed = JSON.parse(post.content);
+        if (Array.isArray(parsed)) {
+          // Convert JSON structure to HTML (old Slate format)
+          const htmlContent = parsed.map(node => {
+            if (!node || !node.type || !node.children) {
+              return ''; 
+            }
+            
+            switch (node.type) {
+              case 'paragraph':
+                return `<p>${node.children.map((c: any) => c.text || '').join('')}</p>`;
+              case 'heading-one':
+                return `<h1>${node.children.map((c: any) => c.text || '').join('')}</h1>`;
+              case 'heading-two':
+                return `<h2>${node.children.map((c: any) => c.text || '').join('')}</h2>`;
+              case 'heading-three':
+                return `<h3>${node.children.map((c: any) => c.text || '').join('')}</h3>`;
+              case 'blockquote':
+                return `<blockquote>${node.children.map((c: any) => c.text || '').join('')}</blockquote>`;
+              case 'bulleted-list':
+                // Handle bulleted lists properly
+                return `<ul class="list-disc ml-6 my-2">${node.children
+                  .map((item: any) => {
+                    if (!item || !item.children) return '';
+                    return `<li>${item.children.map((c: any) => c.text || '').join('')}</li>`;
+                  })
+                  .join('')}</ul>`;
+              case 'numbered-list':
+                // Handle numbered lists properly
+                return `<ol class="list-decimal ml-6 my-2">${node.children
+                  .map((item: any) => {
+                    if (!item || !item.children) return '';
+                    return `<li>${item.children.map((c: any) => c.text || '').join('')}</li>`;
+                  })
+                  .join('')}</ol>`;
+              default:
+                if (node.children && Array.isArray(node.children)) {
+                  return `<p>${node.children.map((c: any) => c.text || '').join('')}</p>`;
+                }
+                return '';
+            }
+          }).join('');
+          return htmlContent;
+        }
+      } catch (e) {
+        // Not valid JSON, assume it's already HTML (new TinyMCE format)
+        return post.content;
+      }
+      
+      // Fallback
+      return post.content;
     } catch (e) {
       console.error("Error rendering post content:", e);
-      // If parsing fails, return the content as is
+      // If all parsing fails, return the content as is
       return post.content || "";
     }
   };

@@ -12,7 +12,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RichTextEditor } from "@/components/RichTextEditor";
+import { TinyMCEEditor } from "@/components/TinyMCEEditor";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ImageUpload } from "@/components/ImageUpload";
 
@@ -96,11 +96,22 @@ const PostForm = () => {
           throw error;
         }
 
+        let formattedContent = data.content || "";
+        try {
+          const parsedContent = JSON.parse(data.content || "[]");
+          
+          if (Array.isArray(parsedContent)) {
+            formattedContent = convertJsonToHtml(parsedContent);
+          }
+        } catch (e) {
+          console.log("Content already in HTML format");
+        }
+
         form.reset({
           title: data.title,
           slug: data.slug,
           excerpt: data.excerpt || "",
-          content: data.content || "",
+          content: formattedContent,
           category_id: data.category_id || "",
           featured_image: data.featured_image || "",
           meta_title: data.meta_title || "",
@@ -132,6 +143,46 @@ const PostForm = () => {
     initialize();
   }, [id, navigate, toast, form]);
 
+  const convertJsonToHtml = (nodes: any[]): string => {
+    return nodes.map(node => {
+      if (!node || !node.type || !node.children) {
+        return '';
+      }
+      
+      switch (node.type) {
+        case 'paragraph':
+          return `<p>${node.children.map((c: any) => c.text || '').join('')}</p>`;
+        case 'heading-one':
+          return `<h1>${node.children.map((c: any) => c.text || '').join('')}</h1>`;
+        case 'heading-two':
+          return `<h2>${node.children.map((c: any) => c.text || '').join('')}</h2>`;
+        case 'heading-three':
+          return `<h3>${node.children.map((c: any) => c.text || '').join('')}</h3>`;
+        case 'blockquote':
+          return `<blockquote>${node.children.map((c: any) => c.text || '').join('')}</blockquote>`;
+        case 'bulleted-list':
+          return `<ul>${node.children
+            .map((item: any) => {
+              if (!item || !item.children) return '';
+              return `<li>${item.children.map((c: any) => c.text || '').join('')}</li>`;
+            })
+            .join('')}</ul>`;
+        case 'numbered-list':
+          return `<ol>${node.children
+            .map((item: any) => {
+              if (!item || !item.children) return '';
+              return `<li>${item.children.map((c: any) => c.text || '').join('')}</li>`;
+            })
+            .join('')}</ol>`;
+        default:
+          if (node.children && Array.isArray(node.children)) {
+            return `<p>${node.children.map((c: any) => c.text || '').join('')}</p>`;
+          }
+          return '';
+      }
+    }).join('');
+  };
+
   const generateSlug = (title: string) => {
     return title
       .toLowerCase()
@@ -148,7 +199,6 @@ const PostForm = () => {
       form.setValue("slug", slug);
     }
 
-    // Auto-populate meta title if empty
     if (!form.getValues("meta_title")) {
       form.setValue("meta_title", title);
     }
@@ -166,7 +216,6 @@ const PostForm = () => {
 
       const slug = values.slug || generateSlug(values.title);
 
-      // Make sure title and slug are always provided
       if (!values.title) {
         throw new Error("Post title is required");
       }
@@ -378,8 +427,8 @@ const PostForm = () => {
                     <FormItem className="col-span-full">
                       <FormLabel>Content</FormLabel>
                       <FormControl>
-                        <div className="min-h-[500px] border rounded-lg">
-                          <RichTextEditor 
+                        <div className="border rounded-lg">
+                          <TinyMCEEditor 
                             value={field.value || ""} 
                             onChange={field.onChange}
                           />
