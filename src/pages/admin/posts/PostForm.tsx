@@ -360,6 +360,7 @@ const PostForm = () => {
                         <ImageUpload
                           onImageUploaded={(url) => field.onChange(url)}
                           currentImage={field.value}
+                          withPicker={true}
                         />
                       </FormControl>
                       <FormDescription>
