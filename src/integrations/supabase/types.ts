@@ -14,6 +14,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          image_url: string | null
           meta_description: string | null
           meta_keywords: string | null
           meta_title: string | null
@@ -25,6 +26,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          image_url?: string | null
           meta_description?: string | null
           meta_keywords?: string | null
           meta_title?: string | null
@@ -36,6 +38,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          image_url?: string | null
           meta_description?: string | null
           meta_keywords?: string | null
           meta_title?: string | null

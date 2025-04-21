@@ -38,6 +38,7 @@ const CategoryPage = () => {
           name: categoryData.name,
           slug: categoryData.slug,
           description: categoryData.description || "",
+          image_url: categoryData.image_url || "",
           created_at: categoryData.created_at,
           updated_at: categoryData.updated_at,
           meta_title: categoryData.meta_title || categoryData.name,
@@ -125,3 +126,4 @@ const CategoryPage = () => {
 };
 
 export default CategoryPage;
+
