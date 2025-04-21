@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface ImageUploadProps {
   onImageUploaded: (url: string) => void;
@@ -25,21 +26,34 @@ export function ImageUpload({ onImageUploaded, currentImage }: ImageUploadProps)
       const fileName = `${Math.random()}.${fileExt}`;
       const filePath = `${fileName}`;
 
+      // First check if the bucket exists
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const bucketExists = buckets?.some(bucket => bucket.name === 'blog-images');
+      
+      if (!bucketExists) {
+        toast.error("Storage bucket 'blog-images' not found");
+        throw new Error("Storage bucket 'blog-images' not found");
+      }
+
+      // Upload to blog-images bucket
       const { error: uploadError, data } = await supabase.storage
-        .from('post-images')
-        .upload(filePath, file);
+        .from('blog-images')
+        .upload(`post-images/${filePath}`, file);
 
       if (uploadError) {
+        toast.error(`Upload failed: ${uploadError.message}`);
         throw uploadError;
       }
 
       const { data: { publicUrl } } = supabase.storage
-        .from('post-images')
-        .getPublicUrl(filePath);
+        .from('blog-images')
+        .getPublicUrl(`post-images/${filePath}`);
 
+      toast.success("Image uploaded successfully");
       onImageUploaded(publicUrl);
     } catch (error) {
       console.error('Error uploading image:', error);
+      toast.error(`Error uploading image: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
       setUploading(false);
     }
