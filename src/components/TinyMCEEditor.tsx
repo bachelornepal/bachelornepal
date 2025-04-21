@@ -62,6 +62,7 @@ export function TinyMCEEditor({ value, onChange }: TinyMCEEditorProps) {
       apiKey="dqu84przz81dvx5ud4fih9fyrii3d8cx2ine3n6sre7awaov"
       onInit={(evt, editor) => editorRef.current = editor}
       initialValue={value}
+      value={value}
       init={{
         height: 500,
         menubar: true,
@@ -83,7 +84,15 @@ export function TinyMCEEditor({ value, onChange }: TinyMCEEditorProps) {
         remove_script_host: false,
         convert_urls: false,
         // Increase timeout for image uploads
-        images_upload_timeout: 30000
+        images_upload_timeout: 30000,
+        // Setting this to false allows use of TinyMCE on any domain
+        referrer_policy: 'origin',
+        // Add this line to properly update content
+        setup: (editor) => {
+          editor.on('change', () => {
+            onChange(editor.getContent());
+          });
+        }
       }}
       onEditorChange={(content) => {
         onChange(content);
