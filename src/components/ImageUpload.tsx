@@ -31,7 +31,7 @@ export function ImageUpload({ onImageUploaded, currentImage, withPicker = false 
       const filePath = `post-images/${fileName}`;
 
       // Upload to blog-images bucket
-      const { error: uploadError, data } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from("blog-images")
         .upload(filePath, file);
 
@@ -53,9 +53,8 @@ export function ImageUpload({ onImageUploaded, currentImage, withPicker = false 
 
       toast({ title: "Image uploaded successfully" });
       onImageUploaded(publicUrl);
-      // After upload, switch to preview mode
-      setMode("upload");
     } catch (error) {
+      console.error("ImageUpload handleFileUpload error:", error);
       toast({
         title: "Error uploading image",
         description: error instanceof Error ? error.message : "Unknown error",

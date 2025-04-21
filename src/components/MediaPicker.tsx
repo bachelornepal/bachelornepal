@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Image as ImageIcon } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface MediaPickerProps {
   onSelect: (url: string) => void;
@@ -29,20 +30,25 @@ export function MediaPicker({ onSelect, selectedImage }: MediaPickerProps) {
 
         if (error) throw error;
 
-        const filesWithUrls = await Promise.all(
-          (files ?? []).map(async (file) => {
+        // Process in batches to avoid overwhelming the browser
+        const processedFiles: MediaFile[] = [];
+        
+        if (files && files.length > 0) {
+          for (const file of files) {
             const { data: { publicUrl } } = supabase.storage
               .from("blog-images")
               .getPublicUrl(`post-images/${file.name}`);
-
-            return {
+            
+            processedFiles.push({
               name: file.name,
               url: publicUrl,
-            };
-          })
-        );
-        setFiles(filesWithUrls);
+            });
+          }
+        }
+        
+        setFiles(processedFiles);
       } catch (error) {
+        console.error("MediaPicker fetchImages error:", error);
         toast({
           title: "Failed to list images",
           variant: "destructive"
@@ -63,7 +69,9 @@ export function MediaPicker({ onSelect, selectedImage }: MediaPickerProps) {
       </div>
       <div className="grid grid-cols-3 md:grid-cols-4 gap-2 max-h-64 overflow-y-auto">
         {loading ? (
-          <div className="col-span-3 flex items-center">Loading...</div>
+          Array(8).fill(0).map((_, i) => (
+            <Skeleton key={i} className="aspect-[1200/628] w-full" />
+          ))
         ) : (
           files.length === 0 ? (
             <div className="col-span-3 text-sm text-muted-foreground">
